@@ -18,8 +18,7 @@ private _medicalVehicleAction = [QGVAR(vehicleAction), "Make Medical Vehicle", "
     !(_target getVariable [QACEGVAR(medical,isMedicalVehicle), false]) &&
     {!(unitIsUAV _target)} &&
     {
-        ACE_Player getVariable [QACEGVAR(medical,medicClass), 0] isEqualTo 2 ||
-        APM_ACE_base_condition
+        ACE_Player getVariable [QACEGVAR(medical,medicClass), 0] isEqualTo 2
     }
 }] call ACEFUNC(interact_menu,createAction);
 

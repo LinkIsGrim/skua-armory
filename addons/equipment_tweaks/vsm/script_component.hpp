@@ -39,8 +39,7 @@
 #define ACU_DISPLAY_NAME_SINGLE(camo) displayName = QUOTE([VSM] Massif ACU (camo))
 #define ACU_ROLLED_DISPLAY_NAME(top,bottom) displayName = QUOTE([VSM] Massif ACU RS (top/bottom))
 #define ACU_ROLLED_DISPLAY_NAME_SINGLE(camo) displayName = QUOTE([VSM] Massif ACU RS (camo))
-#define ACU_TEE_DISPLAY_NAME_SINGLE(camo) displayName = QUOTE([VSM] Massif ACU Tee (camo));\
-    hiddenSelections[] = {"Camo1","Camo2","Camo3"}
+#define ACU_TEE_DISPLAY_NAME_SINGLE(camo) displayName = QUOTE([VSM] Massif ACU Tee (camo))
 
 #define BDU_DISPLAY_NAME(top,bottom) displayName = QUOTE([VSM] BDU (top/bottom))
 #define BDU_DISPLAY_NAME_SINGLE(camo) displayName = QUOTE([VSM] BDU (camo))
