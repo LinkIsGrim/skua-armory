@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project name="Skua">
+    <Package name="safe_grenades">
+        <Key ID="STR_Skua_safe_grenades_ThrowBind_Title">
+            <English>Dangerous bind detected!</English>
+        </Key>
+        <Key ID="STR_Skua_safe_grenades_ThrowBind_Warn">
+            <English>Hey!&lt;br /&gt;You have bound &#39;Throw&#39; (Grenade) key to G which is easy to press and is considered a &#39;Dangerous&#39; bind.&lt;br /&gt;It&#39;s recommended to unbind the key as you can use ACE Throwing (Shift+G) or bind it to 2xG.&lt;br /&gt;Do you want to rebind the action?</English>
+        </Key>
+        <Key ID="STR_Skua_safe_grenades_ThrowBind_Warn2">
+            <English>Are you completly sure!? By confirming this you take full responsblity for all possible accidents.</English>
+        </Key>
+    </Package>
+</Project>

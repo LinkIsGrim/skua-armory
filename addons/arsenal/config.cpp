@@ -1,0 +1,21 @@
+#include "script_component.hpp"
+
+class CfgPatches {
+    class ADDON {
+        units[] = {};
+        weapons[] = {};
+        requiredVersion = REQUIRED_VERSION;
+        requiredAddons[] = {
+            "skua_main",
+            "ace_arsenal",
+            "ace_ballistics"
+        };
+        author = "LinkIsGrim";
+        name = COMPONENT_NAME;
+        VERSION_CONFIG;
+    };
+};
+
+#include "CfgEventHandlers.hpp"
+#include "ACE_Arsenal_Sorts.hpp"
+#include "ACE_Arsenal_Stats.hpp"

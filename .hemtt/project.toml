@@ -1,0 +1,22 @@
+name = "Skua Armory"
+author = "LinkIsGrim"
+prefix = "skua"
+mainprefix = "z"
+
+[files]
+include = [
+    "mod.cpp",
+    "meta.cpp",
+    "logo_skua_armory_ca.paa",
+    "README.md"
+]
+
+[asc]
+enabled = true
+exclude = [
+    ".inc.sqf",
+    "/dev/"
+]
+
+[version]
+git_hash = 0
