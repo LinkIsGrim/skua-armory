@@ -1,0 +1,34 @@
+#define COMPONENT common
+#define COMPONENT_BEAUTIFIED Common
+#include "\z\skua\addons\main\script_mod.hpp"
+
+// #define DEBUG_MODE_FULL
+// #define DISABLE_COMPILE_CACHE
+// #define ENABLE_PERFORMANCE_COUNTERS
+
+#ifdef DEBUG_ENABLED_MAIN
+    #define DEBUG_MODE_FULL
+#endif
+
+#ifdef DEBUG_SETTINGS_MAIN
+    #define DEBUG_SETTINGS DEBUG_SETTINGS_MAIN
+#endif
+
+#include "\z\skua\addons\main\script_macros.hpp"
+
+#define POS_X(N) ((N) * GUI_GRID_W + GUI_GRID_CENTER_X)
+#define POS_Y(N) ((N) * GUI_GRID_H + GUI_GRID_CENTER_Y)
+#define POS_W(N) ((N) * GUI_GRID_W)
+#define POS_H(N) ((N) * GUI_GRID_H)
+
+#define COLOR_BCG { \
+    "(profilenamespace getVariable ['GUI_BCG_RGB_R',0.13])", \
+    "(profilenamespace getVariable ['GUI_BCG_RGB_G',0.54])", \
+    "(profilenamespace getVariable ['GUI_BCG_RGB_B',0.21])", \
+    "(profilenamespace getVariable ['GUI_BCG_RGB_A',0.8])" \
+}
+
+#define IDC_MODAL_TITLE_L       1000
+#define IDC_MODAL_TITLE_R       1001
+#define IDC_MODAL_GROUP_CONTENT 2000
+#define IDC_MODAL_CONTENT_TEXT  2001
