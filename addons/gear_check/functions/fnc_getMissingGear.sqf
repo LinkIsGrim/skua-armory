@@ -82,7 +82,7 @@ if (binocular _unit != "" && {binocularMagazine _unit isEqualTo []} && {([binocu
     [["ACRE_BF888S"], 1, "Baofeng 888S", _missing] call FUNC(countItem);
 };*/
 
-if (GVAR(requireEarplugs) && {ACEGVAR(hearing,damageCoefficent) > 0.6 || !("ACE_EarPlugs" in _unitItems)}) then {
+if (GVAR(requireEarplugs) && {ACEGVAR(hearing,damageCoefficent) > 0.6 && !("ACE_EarPlugs" in _unitItems)}) then {
     _missing pushBack "Earplugs";
     _missingClasses pushBack ["#item", "ACE_EarPlugs", 1];
 };
