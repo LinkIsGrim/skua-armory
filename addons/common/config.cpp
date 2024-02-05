@@ -15,4 +15,5 @@ class CfgPatches {
 };
 
 #include "CfgEventHandlers.hpp"
+#include "CfgFunctions.hpp"
 #include "ui\RscModal.hpp"

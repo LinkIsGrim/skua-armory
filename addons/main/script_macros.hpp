@@ -20,4 +20,13 @@
 #define ACEPATHTOF(component,path) \z\ace\addons\component\path
 #define QACEPATHTOF(component,path) QUOTE(ACEPATHTOF(component,path))
 
+// END ACE3 reference macros
+
 #define CLASS(classname) DOUBLES(PREFIX,classname)
+#define SLOT_GOGGLES 603
+#define SLOT_HEADGEAR 605
+#define SLOT_MAP 608
+#define SLOT_COMPASS 609
+#define SLOT_WATCH 610
+#define SLOT_RADIO 611
+#define SLOT_GPS 612

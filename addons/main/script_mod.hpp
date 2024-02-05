@@ -14,7 +14,7 @@
 // MINIMAL required version for the Mod. Components can specify others..
 #define REQUIRED_VERSION 2.14
 #define REQUIRED_CBA_VERSION {3,16,1}
-#define REQUIRED_ACE_VERSION {3,16,1}
+#define REQUIRED_ACE_VERSION {3,16,3}
 
 #ifdef COMPONENT_BEAUTIFIED
     #define COMPONENT_NAME QUOTE(Skua - COMPONENT_BEAUTIFIED)
