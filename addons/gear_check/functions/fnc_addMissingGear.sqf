@@ -7,7 +7,7 @@ private _missingGear = [_unit, true] call FUNC(getMissingGear);
 private _inArsenal = !isNull findDisplay IDD_ace_arsenal;
 {
     _x params ["_type", "_class", "_count"];
-    if (_inArsenal && {!(_class in ACEGVAR(arsenal,virtualItemsFlat))}) then {continue};
+    if (_inArsenal && {_type != "#magazine"} && {!(_class in ACEGVAR(arsenal,virtualItemsFlat))}) then {continue};
     switch (_type) do {
         case "#uniform": {
             _unit forceAddUniform _class;
@@ -41,12 +41,15 @@ private _inArsenal = !isNull findDisplay IDD_ace_arsenal;
             _unit assignItem "TFAR_anprc152";
         };
         case "#magazine": {
-            if (_class isEqualTo "") then {continue};
-            private _magCount = if ((primaryWeapon _unit) canAdd _class) then {
-                _unit ammo primaryWeapon _unit;
-            } else {
-                _unit ammo handgunWeapon _unit;
+            private _isPrimaryMag = (primaryWeapon _unit) canAdd _class;
+            private _weapon = [primaryWeapon _unit, handgunWeapon _unit] select _isPrimaryMag;
+            if (_class isEqualTo "" || {!(_class in ACEGVAR(arsenal,virtualItemsFlat))}) then {
+                private _availableMagazines = [_weapon] call CBA_fnc_compatibleMagazines;
+                if (_availableMagazines isEqualTo []) then {continue};
+                _class = _availableMagazines select 0;
             };
+            _unit addWeaponItem [_weapon, _class, true];
+            private _magCount = _unit ammo _weapon;
             _magCount = ceil (_count / _magCount);
             for "_i" from 1 to _magCount do {
                 _unit addMagazine _class;
