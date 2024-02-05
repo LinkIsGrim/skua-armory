@@ -78,3 +78,12 @@
     true,
     true
 ] call CBA_fnc_addSetting;
+
+[
+    QGVAR(requireEarplugs),
+    "CHECKBOX",
+    "Ear Plugs",
+    ["Skua Mods", "Arsenal - Gear Check"],
+    true,
+    true
+] call CBA_fnc_addSetting;

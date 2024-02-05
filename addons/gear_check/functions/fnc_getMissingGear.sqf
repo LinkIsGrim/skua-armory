@@ -1,32 +1,41 @@
 #include "..\script_component.hpp"
 
-params ["_unit"];
+#define DEFAULT_UNIFORM QUOTE(VSM_OGA_grey_casual_Camo)
+#define DEFAULT_VEST QUOTE(VSM_OGA_OD_Vest_1)
+#define DEFAULT_RIFLE QUOTE(CUP_arifle_M4A1_standard_black)
+#define DEFAULT_PISTOL QUOTE(hgun_P07_F)
+
+params ["_unit", ["_returnClasses", false]];
+
+if (!GVAR(enabled)) exitWith {[]};
+
+if (!isPlayer _unit) exitWith {[]};
 
 private _roles = [_unit] call FUNC(findRoles);
 
+private _unitItems = uniqueUnitItems [_unit, 0, 2, 2, 2, true];
+
 private _missing = [];
-
-private _items = items _unit;
-
-if (GVAR(requireShovel) && {!([ACE_player] call ACEFUNC(trenches,hasEntrenchingTool))}) then {
-    _missing pushBack "Why don't you have a shovel?";
-};
+private _missingClasses = [];
 
 if (uniform _unit isEqualTo "") then {
     _missing pushBack "A Uniform";
+    _missingClasses pushBack ["#uniform", DEFAULT_UNIFORM, 1];
 };
 
-if (GVAR(requireVest)) then {
-    if (vest _unit isEqualTo "") then {
-        _missing pushBack "A Vest";
-    };
+if (GVAR(requireVest) && {vest _unit isEqualTo ""}) then {
+    _missing pushBack "A Vest";
+    _missingClasses pushBack ["#vest", DEFAULT_VEST, 1];
 };
 
 // Check for a weapon
 if (GVAR(requirePrimary)) then {
     private _weapon = primaryWeapon _unit;
+    private _missingRifle = false;
     if (_weapon isEqualTo "") then {
         _missing pushBack "A Rifle";
+        _missingClasses pushBack ["#weapon", DEFAULT_RIFLE, 1];
+        _missingRifle = true;
     };
     private _rounds = 0;
     {
@@ -36,13 +45,19 @@ if (GVAR(requirePrimary)) then {
     } forEach magazinesAmmoFull _unit;
     if (_rounds < GVAR(requirePrimaryAmmo)) then {
         _missing pushBack format ["%1 Primary Rounds", GVAR(requirePrimaryAmmo) - _rounds];
+        if (!_missingRifle) then {
+            _missingClasses pushBack ["#magazine", (primaryWeaponMagazine _unit) select 0, GVAR(requirePrimaryAmmo) - _rounds];
+        };
     };
 };
 
 if (GVAR(requireHandgun)) then {
     private _weapon = handgunWeapon _unit;
+    private _missingPistol = false;
     if (_weapon isEqualTo "") then {
         _missing pushBack "A Handgun";
+        _missingClasses pushBack ["#weapon", DEFAULT_PISTOL, 1];
+        _missingPistol = true;
     };
     private _rounds = 0;
     {
@@ -52,40 +67,67 @@ if (GVAR(requireHandgun)) then {
     } forEach magazinesAmmoFull _unit;
     if (_rounds < GVAR(requireHandgunAmmo)) then {
         _missing pushBack format ["%1 Handgun Rounds", GVAR(requireHandgunAmmo) - _rounds];
+        if (!_missingPistol) then {
+            _missingClasses pushBack ["#magazine", (handgunMagazine _unit) select 0, GVAR(requireHandgunAmmo) - _rounds];
+        };
     };
+};
+
+if (binocular _unit != "" && {binocularMagazine _unit isEqualTo []} && {([binocular _unit] call CBA_fnc_compatibleMagazines) isNotEqualTo []}) then {
+    _missing pushBack "Designator Batteries";
+    _missingClasses pushBack ["#binoammo", ([binocular _unit] call CBA_fnc_compatibleMagazines) select 0, 1];
 };
 
 /*if (GVAR(requireRadio) && {!("sl" in _roles)}) then {
     [["ACRE_BF888S"], 1, "Baofeng 888S", _missing] call FUNC(countItem);
 };*/
 
-if (GVAR(requireRadio) && {!("TFAR_anprc152" in _new#9#2)}) then {
+if (GVAR(requireEarplugs) && {ACEGVAR(hearing,damageCoefficent) > 0.6 || !("ACE_EarPlugs" in _unitItems)}) then {
+    _missing pushBack "Earplugs";
+    _missingClasses pushBack ["#item", "ACE_EarPlugs", 1];
+};
+
+if (GVAR(requireRadio) && {!("TFAR_anprc152" in (_unit getSlotItemName SLOT_RADIO))}) then {
     _missing pushBack "1 AN/PRC-152";
+    _missingClasses pushBack ["#radio", "TFAR_anprc152", 1];
 };
 
-[["ACE_fieldDressing", "ACE_elasticBandage", "ACE_packingBandage", "ACE_quikclot"],
-                            15, "Bandages", _missing] call FUNC(countItem);
-[["ACE_splint"],            2, "Splints", _missing] call FUNC(countItem);
-[["ACE_morphine"],          2, "Morphine Autoinjector", _missing] call FUNC(countItem);
-[["ACE_epinephrine"],       1, "Epinephrine Autoinjector", _missing] call FUNC(countItem);
-[["ACE_tourniquet"],        4, "Tourniquets", _missing] call FUNC(countItem);
-[["SmokeShell"],            2, "Smoke Grenade (White)", _missing] call FUNC(countItem);
-[["ACE_CableTie"],          2, "Cable Tie", _missing] call FUNC(countItem);
+[["ACE_fieldDressing","ACE_packingBandage"], _unitItems,
+                                      15, ["Bandage (Bsc./Pck.)", "Bandages (Bsc./Pck.)"], _missing, _missingClasses] call FUNC(countItem);
+[["ACE_splint"], _unitItems,           2, ["Splint", "Splints"], _missing, _missingClasses] call FUNC(countItem);
+[["ACE_morphine"], _unitItems,         2, ["Morphine Autoinjector", "Morphine Autoinjectors"], _missing, _missingClasses] call FUNC(countItem);
+[["ACE_epinephrine"], _unitItems,      1, ["Epinephrine Autoinjector", "Epinephrine Autoinjectors"], _missing, _missingClasses] call FUNC(countItem);
+[["ACE_tourniquet"], _unitItems,       4, ["Tourniquet", "Tourniquets"], _missing, _missingClasses] call FUNC(countItem);
+[["SmokeShell"], _unitItems,           2, ["Smoke Grenade (White)", "Smoke Grenades (White)"], _missing, _missingClasses] call FUNC(countItem);
+[["ACE_CableTie"], _unitItems,         2, ["Cable Tie", "Cable Ties"], _missing, _missingClasses] call FUNC(countItem);
 
-if (_new#9#0 isEqualTo "") then {
+if ((_unit getSlotItemName SLOT_MAP) isEqualTo "") then {
     _missing pushBack "A Map";
+    _missingClasses pushBack ["#belt", "ItemMap", 1];
 };
 
-if (_new#9#1 isEqualTo "") then {
+if ((_unit getSlotItemName SLOT_GPS) isEqualTo "") then {
     _missing pushBack "A GPS";
+    _missingClasses pushBack ["#belt", "ItemAndroid", 1];
 };
 
-if (_new#9#3 isEqualTo "") then {
+if ((_unit getSlotItemName SLOT_COMPASS) isEqualTo "") then {
     _missing pushBack "A Compass";
+    _missingClasses pushBack ["#belt", "ItemCompass", 1];
 };
 
-if (_new#9#4 isEqualTo "") then {
+if ((_unit getSlotItemName SLOT_WATCH) isEqualTo "") then {
     _missing pushBack "A Watch";
+    _missingClasses pushBack ["#belt", "ItemWatch", 1];
 };
 
-_missing
+if (GVAR(requireShovel) && {!("ACE_EntrenchingTool" in _unitItems)}) then {
+    _missing pushBack "An Entrenching Tool";
+    _missingClasses pushBack ["#item", "ACE_EntrenchingTool", 1];
+};
+
+if (_missing isNotEqualTo []) then {
+    _missing insert [0, ["Missing Basic Gear:"]];
+};
+
+[_missing, _missingClasses] select _returnClasses

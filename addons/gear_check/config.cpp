@@ -14,5 +14,5 @@ class CfgPatches {
     };
 };
 
+#include "ACE_Arsenal_Actions.hpp"
 #include "CfgEventHandlers.hpp"
-#include "ui\RscAttributes.hpp"
