@@ -20,12 +20,12 @@ private _missingClasses = [];
 
 if (uniform _unit isEqualTo "") then {
     _missing pushBack "A Uniform";
-    _missingClasses pushBack ["#uniform", DEFAULT_UNIFORM, 1];
+    _missingClasses pushBack ["#uniform", [DEFAULT_UNIFORM], 1];
 };
 
 if (GVAR(requireVest) && {vest _unit isEqualTo ""}) then {
     _missing pushBack "A Vest";
-    _missingClasses pushBack ["#vest", DEFAULT_VEST, 1];
+    _missingClasses pushBack ["#vest", [DEFAULT_VEST], 1];
 };
 
 // Check for a weapon
@@ -34,7 +34,7 @@ if (GVAR(requirePrimary)) then {
     private _missingRifle = false;
     if (_weapon isEqualTo "") then {
         _missing pushBack "A Rifle";
-        _missingClasses pushBack ["#weapon", DEFAULT_RIFLE, 1];
+        _missingClasses pushBack ["#weapon", [DEFAULT_RIFLE], 1];
         _missingRifle = true;
     };
     private _rounds = 0;
@@ -46,7 +46,7 @@ if (GVAR(requirePrimary)) then {
     if (_rounds < GVAR(requirePrimaryAmmo)) then {
         _missing pushBack format ["%1 Primary Rounds", GVAR(requirePrimaryAmmo) - _rounds];
         if (!_missingRifle) then {
-            _missingClasses pushBack ["#magazine", (primaryWeaponMagazine _unit) select 0, GVAR(requirePrimaryAmmo) - _rounds];
+            _missingClasses pushBack ["#magazine", primaryWeaponMagazine _unit, GVAR(requirePrimaryAmmo) - _rounds, _weapon];
         };
     };
 };
@@ -56,7 +56,7 @@ if (GVAR(requireHandgun)) then {
     private _missingPistol = false;
     if (_weapon isEqualTo "") then {
         _missing pushBack "A Handgun";
-        _missingClasses pushBack ["#weapon", DEFAULT_PISTOL, 1];
+        _missingClasses pushBack ["#weapon", [DEFAULT_PISTOL], 1];
         _missingPistol = true;
     };
     private _rounds = 0;
@@ -68,14 +68,14 @@ if (GVAR(requireHandgun)) then {
     if (_rounds < GVAR(requireHandgunAmmo)) then {
         _missing pushBack format ["%1 Handgun Rounds", GVAR(requireHandgunAmmo) - _rounds];
         if (!_missingPistol) then {
-            _missingClasses pushBack ["#magazine", (handgunMagazine _unit) select 0, GVAR(requireHandgunAmmo) - _rounds];
+            _missingClasses pushBack ["#magazine", handgunMagazine _unit, GVAR(requireHandgunAmmo) - _rounds, _weapon];
         };
     };
 };
 
 if (binocular _unit != "" && {binocularMagazine _unit isEqualTo []} && {([binocular _unit] call CBA_fnc_compatibleMagazines) isNotEqualTo []}) then {
     _missing pushBack "Designator Batteries";
-    _missingClasses pushBack ["#binoammo", ([binocular _unit] call CBA_fnc_compatibleMagazines) select 0, 1];
+    _missingClasses pushBack ["#binoammo", [binocular _unit] call CBA_fnc_compatibleMagazines, 1];
 };
 
 /*if (GVAR(requireRadio) && {!("sl" in _roles)}) then {
@@ -84,12 +84,12 @@ if (binocular _unit != "" && {binocularMagazine _unit isEqualTo []} && {([binocu
 
 if (GVAR(requireEarplugs) && {ACEGVAR(hearing,damageCoefficent) > 0.6 && !("ACE_EarPlugs" in _unitItems)}) then {
     _missing pushBack "Earplugs";
-    _missingClasses pushBack ["#item", "ACE_EarPlugs", 1];
+    _missingClasses pushBack ["#item", ["ACE_EarPlugs"], 1];
 };
 
 if (GVAR(requireRadio) && {!("TFAR_anprc152" in (_unit getSlotItemName SLOT_RADIO))}) then {
     _missing pushBack "1 AN/PRC-152";
-    _missingClasses pushBack ["#radio", "TFAR_anprc152", 1];
+    _missingClasses pushBack ["#radio", ["TFAR_anprc152"], 1];
 };
 
 [["ACE_fieldDressing","ACE_packingBandage"], _unitItems,
@@ -100,30 +100,32 @@ if (GVAR(requireRadio) && {!("TFAR_anprc152" in (_unit getSlotItemName SLOT_RADI
 [["ACE_tourniquet"], _unitItems,       4, ["Tourniquet", "Tourniquets"], _missing, _missingClasses] call FUNC(countItem);
 [["SmokeShell"], _unitItems,           2, ["Smoke Grenade (White)", "Smoke Grenades (White)"], _missing, _missingClasses] call FUNC(countItem);
 [["ACE_CableTie"], _unitItems,         2, ["Cable Tie", "Cable Ties"], _missing, _missingClasses] call FUNC(countItem);
+[["ACE_bloodIV_250", "ACE_salineIV_250", "ACE_plasmaIV_250"], _unitItems,
+                                       2, ["250ml IV", "250ml IVs"], _missing, _missingClasses] call FUNC(countItem);
 
 if ((_unit getSlotItemName SLOT_MAP) isEqualTo "") then {
     _missing pushBack "A Map";
-    _missingClasses pushBack ["#belt", "ItemMap", 1];
+    _missingClasses pushBack ["#belt", ["ItemMap"], 1];
 };
 
 if ((_unit getSlotItemName SLOT_GPS) isEqualTo "") then {
     _missing pushBack "A GPS";
-    _missingClasses pushBack ["#belt", "ItemAndroid", 1];
+    _missingClasses pushBack ["#belt", ["ItemAndroid"], 1];
 };
 
 if ((_unit getSlotItemName SLOT_COMPASS) isEqualTo "") then {
     _missing pushBack "A Compass";
-    _missingClasses pushBack ["#belt", "ItemCompass", 1];
+    _missingClasses pushBack ["#belt", ["ItemCompass"], 1];
 };
 
 if ((_unit getSlotItemName SLOT_WATCH) isEqualTo "") then {
     _missing pushBack "A Watch";
-    _missingClasses pushBack ["#belt", "ItemWatch", 1];
+    _missingClasses pushBack ["#belt", ["ItemWatch"], 1];
 };
 
 if (GVAR(requireShovel) && {!("ACE_EntrenchingTool" in _unitItems)}) then {
     _missing pushBack "An Entrenching Tool";
-    _missingClasses pushBack ["#item", "ACE_EntrenchingTool", 1];
+    _missingClasses pushBack ["#item", ["ACE_EntrenchingTool"], 1];
 };
 
 if (_missing isNotEqualTo []) then {

@@ -10,5 +10,5 @@ private _have = 0;
 if (_have < _count) exitWith {
     private _qnt = _count - _have;
     _missing pushBackUnique format ["%1 %2", _qnt, _pretty select (_qnt > 1)];
-    _missingClasses pushBack ["#item", _items select 0, _qnt];
+    _missingClasses pushBack ["#item", _items, _qnt];
 };
