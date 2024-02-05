@@ -31,9 +31,6 @@ if !(GVAR(enabled)) exitWith {
 private _missingRequired = [_unit] call FUNC(getMissingGear);
 private _missingSpecial = [_unit] call FUNC(getSpecialGear);
 
-INFO_1("%1",_missingRequired);
-INFO_1("%1",_missingSpecial);
-
 private _yOffset = 0;
 
 if (_missingRequired isEqualTo []) then {
