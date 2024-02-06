@@ -103,6 +103,11 @@ if (GVAR(requireRadio) && {!("TFAR_anprc152" in (_unit getSlotItemName SLOT_RADI
 [["ACE_bloodIV_250", "ACE_salineIV_250", "ACE_plasmaIV_250"], _unitItems,
                                        2, ["250ml IV", "250ml IVs"], _missing, _missingClasses] call FUNC(countItem);
 
+if (GVAR(requireNVG) && {(hmd _unit) == ""}) then {
+    _missing pushBack "NVGs";
+    _missingClasses pushBack ["#belt", ["ACE_NVG_Wide"], 1];
+};
+
 if ((_unit getSlotItemName SLOT_MAP) isEqualTo "") then {
     _missing pushBack "A Map";
     _missingClasses pushBack ["#belt", ["ItemMap"], 1];
