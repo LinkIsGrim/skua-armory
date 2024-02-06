@@ -9,6 +9,14 @@ private _have = 0;
 
 if (_have < _count) exitWith {
     private _qnt = _count - _have;
+    if (_pretty isEqualType "") then {
+        _pretty = [_pretty, _pretty];
+    } else {
+        _pretty params ["_singular", ["_plural", ""]];
+        if (_plural == "") then {
+            _pretty set [1, _singular];
+        };
+    };
     _missing pushBackUnique format ["%1 %2", _qnt, _pretty select (_qnt > 1)];
     _missingClasses pushBack ["#item", _items, _qnt];
 };

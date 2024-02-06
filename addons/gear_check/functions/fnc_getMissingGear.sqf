@@ -93,7 +93,7 @@ if (GVAR(requireRadio) && {!("TFAR_anprc152" in (_unit getSlotItemName SLOT_RADI
 };
 
 [["ACE_fieldDressing","ACE_packingBandage"], _unitItems,
-                                      15, ["Bandage (Bsc./Pck.)", "Bandages (Bsc./Pck.)"], _missing, _missingClasses] call FUNC(countItem);
+                                      15, ["Bandage (Basic/Packing)", "Bandages (Basic/Packing)"], _missing, _missingClasses] call FUNC(countItem);
 [["ACE_splint"], _unitItems,           2, ["Splint", "Splints"], _missing, _missingClasses] call FUNC(countItem);
 [["ACE_morphine"], _unitItems,         2, ["Morphine Autoinjector", "Morphine Autoinjectors"], _missing, _missingClasses] call FUNC(countItem);
 [["ACE_epinephrine"], _unitItems,      1, ["Epinephrine Autoinjector", "Epinephrine Autoinjectors"], _missing, _missingClasses] call FUNC(countItem);
