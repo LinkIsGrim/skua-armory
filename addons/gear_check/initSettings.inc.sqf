@@ -3,7 +3,6 @@
     "CHECKBOX",
     "Require Equipment",
     ["Skua Mods", "Arsenal - Gear Check"],
-    true,
     true
 ] call CBA_fnc_addSetting;
 
@@ -12,7 +11,6 @@
     "CHECKBOX",
     "Primary Weapon",
     ["Skua Mods", "Arsenal - Gear Check"],
-    true,
     true
 ] call CBA_fnc_addSetting;
 
@@ -30,8 +28,7 @@
     "CHECKBOX",
     "Handgun Weapon",
     ["Skua Mods", "Arsenal - Gear Check"],
-    false,
-    true
+    false
 ] call CBA_fnc_addSetting;
 
 [
@@ -48,7 +45,6 @@
     "CHECKBOX",
     "Vest",
     ["Skua Mods", "Arsenal - Gear Check"],
-    true,
     true
 ] call CBA_fnc_addSetting;
 
@@ -57,8 +53,7 @@
     "CHECKBOX",
     "NVG",
     ["Skua Mods", "Arsenal - Gear Check"],
-    false,
-    true
+    false
 ] call CBA_fnc_addSetting;
 
 [
@@ -66,7 +61,6 @@
     "CHECKBOX",
     "Radio",
     ["Skua Mods", "Arsenal - Gear Check"],
-    true,
     true
 ] call CBA_fnc_addSetting;
 
@@ -75,7 +69,6 @@
     "CHECKBOX",
     "Entrenching Tool",
     ["Skua Mods", "Arsenal - Gear Check"],
-    true,
     true
 ] call CBA_fnc_addSetting;
 
@@ -84,6 +77,5 @@
     "CHECKBOX",
     "Ear Plugs",
     ["Skua Mods", "Arsenal - Gear Check"],
-    true,
     true
 ] call CBA_fnc_addSetting;
