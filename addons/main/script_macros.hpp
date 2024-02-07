@@ -23,6 +23,7 @@
 // END ACE3 reference macros
 
 #define CLASS(classname) DOUBLES(PREFIX,classname)
+#define QCLASS(classname) QUOTE(CLASS(classname))
 #define SLOT_GOGGLES 603
 #define SLOT_HEADGEAR 605
 #define SLOT_MAP 608

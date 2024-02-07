@@ -15,3 +15,8 @@
 #endif
 
 #include "\z\skua\addons\main\script_macros.hpp"
+
+#define UNIFORM_ITEM_INFO class ItemInfo: ItemInfo {\
+    mass = 40;\
+    containerClass = "Supply40";\
+}
