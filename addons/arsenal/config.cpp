@@ -17,5 +17,6 @@ class CfgPatches {
 };
 
 #include "CfgEventHandlers.hpp"
+#include "RscDisplayMain.hpp"
 #include "ACE_Arsenal_Sorts.hpp"
 #include "ACE_Arsenal_Stats.hpp"
