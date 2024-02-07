@@ -14,6 +14,8 @@ class CfgPatches {
     };
 };
 
+enableTargetDebug = 1;
+
 #include "CfgEventHandlers.hpp"
 #include "CfgFunctions.hpp"
 #include "ui\RscModal.hpp"
