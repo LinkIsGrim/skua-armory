@@ -14,8 +14,9 @@ class CfgPatches {
     };
 };
 
-#include "CfgMagazineWells.hpp"
+#include "CfgAmmo.hpp"
 #include "CfgJointRails.hpp"
+#include "CfgMagazineWells.hpp"
 #include "CfgSoundSets.hpp"
 #include "CfgSoundShaders.hpp"
 #include "CfgWeapons.hpp"
