@@ -123,3 +123,5 @@ private _composition = [];
 _composition deleteAt 0;
 
 _textCtrl ctrlSetStructuredText composeText _composition;
+
+nil

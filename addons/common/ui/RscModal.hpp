@@ -1,4 +1,6 @@
+#include "\a3\ui_f\hpp\defineCommonGrids.inc"
 #include "\a3\ui_f\hpp\defineResincl.inc"
+#include "\a3\ui_f\hpp\defineResinclDesign.inc"
 
 class RscText;
 class RscTitle;

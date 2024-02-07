@@ -1,4 +1,4 @@
-#include "script_component.hpp"
+#include "..\script_component.hpp"
 /*
  * Author: veteran29
  * Warns the player that he has default bind "G" to throw grenade.
