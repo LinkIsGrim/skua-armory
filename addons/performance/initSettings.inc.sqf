@@ -3,7 +3,7 @@
     "CHECKBOX",
     [LSTRING(EnabledRemoteSensors), LSTRING(EnabledRemoteSensorsDesc)],
     ["Skua Mods", "Performance"],
-    true,
+    false,
     true,
     {
         if (isServer || {!hasInterface}) exitWith {};
