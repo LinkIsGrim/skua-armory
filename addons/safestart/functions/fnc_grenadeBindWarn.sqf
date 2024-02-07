@@ -37,7 +37,7 @@ private _fnc_secondWarning = {
             {},
             {
                 params ["", "_confirm"];
-                if (_confirm isEqualTo CONFIRMED) exitWith {
+                if (_confirm isEqualTo DISCARDED) exitWith {
                     // Open rebinding screen
                     [{
                         [THROW_KEYBIND] call FUNC(openKeybinding);
