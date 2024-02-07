@@ -19,7 +19,7 @@
     "SLIDER",
     "Primary Ammunition",
     ["Skua Mods", "Arsenal - Gear Check"],
-    [0, 180, 120, 0, false],
+    [0, 300, 120, 0, false],
     true
 ] call CBA_fnc_addSetting;
 
