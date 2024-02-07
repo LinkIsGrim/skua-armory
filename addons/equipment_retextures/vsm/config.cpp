@@ -15,6 +15,12 @@ class CfgPatches {
             "VSM_MulticamTropic_Config",
             "VSM_Scorpion_Config",
             "AOR2_Config",
+            "VSM_Vests_Config",
+            "Black_Vests_Config",
+            "Arid_Vests_Config",
+            "Alpine_Config",
+            "Alpine_Vests_Config",
+            "AOR2_Vests_Config",
             "MLO_Ghost"
         };
         skipWhenMissingDependencies = 1;
