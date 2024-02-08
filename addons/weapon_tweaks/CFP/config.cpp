@@ -9,6 +9,7 @@ class CfgPatches {
         requiredAddons[] = {
             "skua_main",
             "cfp_main"
+        };
         skipWhenMissingDependencies = 1;
         VERSION_CONFIG;
     };
