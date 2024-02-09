@@ -7,7 +7,7 @@ class CfgPatches {
         weapons[] = {};
         requiredVersion = REQUIRED_VERSION;
         requiredAddons[] = {
-            "skua_main",
+            "skua_hidden",
             "UMI_Electronics",
             "UMI_Inventory",
             "UMI_Mod"

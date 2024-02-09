@@ -7,7 +7,7 @@ class CfgPatches {
         weapons[] = {};
         requiredVersion = REQUIRED_VERSION;
         requiredAddons[] = {
-            "skua_main",
+            "skua_weapon_tweaks",
             "cfp_main"
         };
         skipWhenMissingDependencies = 1;

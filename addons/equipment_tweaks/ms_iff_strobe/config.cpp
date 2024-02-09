@@ -7,7 +7,7 @@ class CfgPatches {
         weapons[] = {};
         requiredVersion = REQUIRED_VERSION;
         requiredAddons[] = {
-            "skua_main",
+            "skua_equipment_tweaks",
             "MS_IFF_Addon",
             "ace_attach"
         };

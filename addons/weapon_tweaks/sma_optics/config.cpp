@@ -7,7 +7,7 @@ class CfgPatches {
         weapons[] = {};
         requiredVersion = REQUIRED_VERSION;
         requiredAddons[] = {
-            "skua_main",
+            "skua_weapon_tweaks",
             "SMA_ELCAN_ALTZOOM_C",
             "sma_vortex_optics",
             "SMA_Eotech_552",

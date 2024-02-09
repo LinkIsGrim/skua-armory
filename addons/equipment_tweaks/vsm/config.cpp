@@ -7,7 +7,7 @@ class CfgPatches {
         weapons[] = {};
         requiredVersion = REQUIRED_VERSION;
         requiredAddons[] = {
-            "skua_main",
+            "skua_equipment_tweaks",
             "VSM_M81_Config",
             "VSM_AOR1_Config",
             "VSM_OGA_Config",
