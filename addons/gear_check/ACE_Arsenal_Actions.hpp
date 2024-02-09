@@ -10,7 +10,6 @@ class ACEGVAR(arsenal,actions) {
         };
         class addMissingGear {
             label = "Add Missing Gear";
-            condition = QUOTE([ARR_3(_this select 0,true,false)] call FUNC(showGearCondition));
             statement = QUOTE(_this select 0 call FUNC(addMissingGear));
         };
         /*class missingSpecialGearContent {
