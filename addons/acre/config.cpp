@@ -11,6 +11,7 @@ class CfgPatches {
         };
         author = "LinkIsGrim";
         name = COMPONENT_NAME;
+        skipWhenMissingDependencies = 1;
         VERSION_CONFIG;
     };
 };
