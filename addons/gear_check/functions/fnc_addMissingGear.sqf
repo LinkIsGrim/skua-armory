@@ -41,7 +41,7 @@ private _inArsenal = !isNull findDisplay IDD_ace_arsenal;
         case "#binoammo": {
             _unit addBinocularItem _class;
         };
-        case "#radio": {
+        case "#radio": { // TFAR-only
             _unit addItem "TFAR_anprc152";
             _unit assignItem "TFAR_anprc152";
         };

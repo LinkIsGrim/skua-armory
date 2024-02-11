@@ -78,18 +78,13 @@ if (binocular _unit != "" && {binocularMagazine _unit isEqualTo []} && {([binocu
     _missingClasses pushBack ["#binoammo", [binocular _unit] call CBA_fnc_compatibleMagazines, 1];
 };
 
-/*if (GVAR(requireRadio) && {!("sl" in _roles)}) then {
-    [["ACRE_BF888S"], 1, "Baofeng 888S", _missing] call FUNC(countItem);
-};*/
-
 if (GVAR(requireEarplugs) && {ACEGVAR(hearing,damageCoefficent) > 0.6 && !("ACE_EarPlugs" in _unitItems)}) then {
     _missing pushBack "Earplugs";
     _missingClasses pushBack ["#item", ["ACE_EarPlugs"], 1];
 };
 
-if (GVAR(requireRadio) && {!("TFAR_anprc152" in (_unit getSlotItemName SLOT_RADIO))}) then {
-    _missing pushBack "1 AN/PRC-152";
-    _missingClasses pushBack ["#radio", ["TFAR_anprc152"], 1];
+if (GVAR(requireRadio)) then {
+    [["ACRE_BF888S"], _unitItems, 1, ["Baofeng 888S", "Baofeng 888S"], _missing, _missingClasses] call FUNC(countItem);
 };
 
 [["ACE_fieldDressing","ACE_packingBandage"], _unitItems,
