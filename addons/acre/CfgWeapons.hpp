@@ -1,0 +1,15 @@
+#define SET_BASE_WEAPON(radioClass) class radioClass: ACRE_BaseRadio {\
+    baseWeapon = QUOTE(radioClass);\
+}
+
+class CfgWeapons {
+    class ACRE_BaseRadio;
+    SET_BASE_WEAPON(ACRE_SEM52SL);
+    SET_BASE_WEAPON(ACRE_SEM70);
+    SET_BASE_WEAPON(ACRE_BF888S);
+    SET_BASE_WEAPON(ACRE_PRC117F);
+    SET_BASE_WEAPON(ACRE_PRC148);
+    SET_BASE_WEAPON(ACRE_PRC152);
+    SET_BASE_WEAPON(ACRE_PRC343);
+    SET_BASE_WEAPON(ACRE_PRC77);
+};
