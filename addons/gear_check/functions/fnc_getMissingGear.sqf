@@ -14,6 +14,16 @@ if (!isPlayer _unit) exitWith {[]};
 private _roles = [_unit] call FUNC(findRoles);
 
 private _unitItems = uniqueUnitItems [_unit, 0, 2, 2, 2, true];
+if ("acre_api" call ACEFUNC(common,isModLoaded)) then {
+    {
+        private _baseRadio = _x call acre_api_fnc_getBaseRadio;
+        private _count = _unitItems get _x;
+        _unitItems set [_baseRadio, (_unitItems getOrDefault [_baseRadio, 0]) + _count];
+        if (_x != _baseRadio) then {
+            _unitItems deleteAt _x;
+        };
+    } forEach ((keys _unitItems) select {_x call acre_api_fnc_isRadio});
+};
 
 private _missing = [];
 private _missingClasses = [];
