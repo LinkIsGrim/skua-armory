@@ -1,0 +1,64 @@
+class CfgMagazineWells {
+    class CBA_762x51_AR10 {
+        ADDON[] = {
+            "JCA_20Rnd_762x51_PMAG",
+            "JCA_20Rnd_762x51_Red_PMAG",
+            "JCA_20Rnd_762x51_Green_PMAG",
+            "JCA_20Rnd_762x51_Yellow_PMAG",
+            "JCA_20Rnd_762x51_IR_PMAG",
+            "JCA_20Rnd_762x51_Tracer_Red_PMAG",
+            "JCA_20Rnd_762x51_Tracer_Green_PMAG",
+            "JCA_20Rnd_762x51_Tracer_Yellow_PMAG",
+            "JCA_20Rnd_762x51_Tracer_IR_PMAG",
+            "JCA_20Rnd_762x51_Sand_PMAG",
+            "JCA_20Rnd_762x51_Red_Sand_PMAG",
+            "JCA_20Rnd_762x51_Green_Sand_PMAG",
+            "JCA_20Rnd_762x51_Yellow_Sand_PMAG",
+            "JCA_20Rnd_762x51_IR_Sand_PMAG",
+            "JCA_20Rnd_762x51_Tracer_Red_Sand_PMAG",
+            "JCA_20Rnd_762x51_Tracer_Green_Sand_PMAG",
+            "JCA_20Rnd_762x51_Tracer_Yellow_Sand_PMAG",
+            "JCA_20Rnd_762x51_Tracer_IR_Sand_PMAG",
+            "JCA_20Rnd_762x51_SMAG",
+            "JCA_20Rnd_762x51_Red_SMAG",
+            "JCA_20Rnd_762x51_Green_SMAG",
+            "JCA_20Rnd_762x51_Yellow_SMAG",
+            "JCA_20Rnd_762x51_IR_SMAG",
+            "JCA_20Rnd_762x51_Tracer_Red_SMAG",
+            "JCA_20Rnd_762x51_Tracer_Green_SMAG",
+            "JCA_20Rnd_762x51_Tracer_Yellow_SMAG",
+            "JCA_20Rnd_762x51_Tracer_IR_SMAG",
+            "JCA_20Rnd_762x51_Sand_SMAG",
+            "JCA_20Rnd_762x51_Red_Sand_SMAG",
+            "JCA_20Rnd_762x51_Green_Sand_SMAG",
+            "JCA_20Rnd_762x51_Yellow_Sand_SMAG",
+            "JCA_20Rnd_762x51_IR_Sand_SMAG",
+            "JCA_20Rnd_762x51_Tracer_Red_Sand_SMAG",
+            "JCA_20Rnd_762x51_Tracer_Green_Sand_SMAG",
+            "JCA_20Rnd_762x51_Tracer_Yellow_Sand_SMAG",
+            "JCA_20Rnd_762x51_Tracer_IR_Sand_SMAG"
+        };
+    };
+    class CBA_556x45_STANAG {
+        ADDON[] = {
+            "JCA_30Rnd_556x45_PMAG",
+            "JCA_30Rnd_556x45_Red_PMAG",
+            "JCA_30Rnd_556x45_Green_PMAG",
+            "JCA_30Rnd_556x45_Yellow_PMAG",
+            "JCA_30Rnd_556x45_IR_PMAG",
+            "JCA_30Rnd_556x45_Tracer_Red_PMAG",
+            "JCA_30Rnd_556x45_Tracer_Green_PMAG",
+            "JCA_30Rnd_556x45_Tracer_Yellow_PMAG",
+            "JCA_30Rnd_556x45_Tracer_IR_PMAG",
+            "JCA_30Rnd_556x45_sand_PMAG",
+            "JCA_30Rnd_556x45_Red_sand_PMAG",
+            "JCA_30Rnd_556x45_Green_sand_PMAG",
+            "JCA_30Rnd_556x45_Yellow_sand_PMAG",
+            "JCA_30Rnd_556x45_IR_sand_PMAG",
+            "JCA_30Rnd_556x45_Tracer_Red_sand_PMAG",
+            "JCA_30Rnd_556x45_Tracer_Green_sand_PMAG",
+            "JCA_30Rnd_556x45_Tracer_Yellow_sand_PMAG",
+            "JCA_30Rnd_556x45_Tracer_IR_sand_PMAG"
+        };
+    };
+};
