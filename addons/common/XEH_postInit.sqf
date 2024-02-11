@@ -15,7 +15,7 @@ if (isServer) then {
     private _camoCoef = getNumber (configFile >> "CfgVehicles" >> getText (configFile >> "CfgWeapons" >> _uniform >> "ItemInfo" >> "uniformClass") >> "camouflage");
     _camoCoef = _camoCoef/BASELINE_CAMO_COEF;
     _unit setUnitTrait ["camouflageCoef", sqrt(_camoCoef)];
-}] call CBA_fnc_addEventHandler;
+}] call CBA_fnc_addClassEventHandler;
 
 [QACEGVAR(zeus,zeusUnitAssigned), {
     params ["_logic", "_unit"];
