@@ -12,10 +12,19 @@ class CfgPatches {
         name = COMPONENT_NAME;
         VERSION_CONFIG;
     };
+    class tac_main {
+        addonRootClass = QUOTE(ADDON);
+        name = "TAC Main";
+        requiredAddons[] = {};
+        units[] = {};
+        weapons[] = {};
+        VERSION_CONFIG;
+    };
 };
 
 enableTargetDebug = 1;
 
+#include "CfgEditorCategories.hpp"
 #include "CfgEventHandlers.hpp"
 #include "CfgFunctions.hpp"
 #include "ui\RscModal.hpp"
