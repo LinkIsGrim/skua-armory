@@ -6,9 +6,7 @@ class CfgPatches {
         weapons[] = {};
         requiredVersion = REQUIRED_VERSION;
         requiredAddons[] = {
-            "skua_main",
-            "ace_arsenal",
-            "ace_ballistics"
+            "skua_main"
         };
         author = "LinkIsGrim";
         name = COMPONENT_NAME;

@@ -15,14 +15,3 @@
 #endif
 
 #include "\z\skua\addons\main\script_macros.hpp"
-
-#define PIXEL_SCALE 0.25
-#define GRID_W (pixelW * pixelGridNoUIScale * PIXEL_SCALE)
-#define GRID_H (pixelH * pixelGridNoUIScale * PIXEL_SCALE)
-
-// Deliberately the same as Synixe
-#define IDC_requiredGearBox 24835
-#define IDC_requiredGearTitle 24836
-#define IDC_requiredGearText 24837
-
-#define CUSTOM_BOXES [IDC_requiredGearBox, IDC_requiredGearTitle]
