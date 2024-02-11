@@ -12,7 +12,7 @@ if (isServer) then {
     if (!_assigned) exitWith {
         _unit setUnitTrait ["camouflageCoef", 1];
     };
-    private _camoCoef = getNumber (configFile >> "CfgVehicles" >> getText (configFile >> "CfgWeapons" >> _uniform >> "ItemInfo" >> "uniformClass") >> "camouflage");
+    private _camoCoef = getNumber (configFile >> "CfgVehicles" >> getText (configFile >> "CfgWeapons" >> (uniform _unit) >> "ItemInfo" >> "uniformClass") >> "camouflage");
     _camoCoef = _camoCoef/BASELINE_CAMO_COEF;
     _unit setUnitTrait ["camouflageCoef", sqrt(_camoCoef)];
 }] call CBA_fnc_addClassEventHandler;
