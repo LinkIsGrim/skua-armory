@@ -20,7 +20,7 @@
     "Primary Ammunition",
     ["Skua Mods", "Arsenal - Gear Check"],
     [0, 300, 120, 0, false],
-    true
+    false
 ] call CBA_fnc_addSetting;
 
 [
@@ -37,7 +37,7 @@
     "Handgun Ammunition",
     ["Skua Mods", "Arsenal - Gear Check"],
     [0, 150, 0, 0, false],
-    true
+    false
 ] call CBA_fnc_addSetting;
 
 [
