@@ -54,15 +54,10 @@ private _fnc_secondWarning = {
 
 [{!isNull MISSION_DISPLAY}, {
     params ["_fnc_onClose"];
-    private _warnMessage = if (EGVAR(common,aceThrowing)) then {
-        LLSTRING(ThrowBind_Warn)
-    } else {
-        LLSTRING(ThrowBind_WarnNoACEThrowing)
-    };
 
     [
         LLSTRING(ThrowBind_Title),
-        _warnMessage,
+        LLSTRING(ThrowBind_Warn),
         false,
         {},
         _this
