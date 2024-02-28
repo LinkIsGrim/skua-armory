@@ -2,6 +2,9 @@
 .hemttout
 hemtt
 hemtt.exe
+hemtt*.exe
 *.biprivatekey
 .vscode
 releases
+Cargo.lock
+target/
