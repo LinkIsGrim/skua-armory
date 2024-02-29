@@ -6,7 +6,7 @@ class CfgPatches {
         weapons[] = {};
         requiredVersion = REQUIRED_VERSION;
         requiredAddons[] = {
-            "skua_common"
+            "skua_main"
         };
         author = "LinkIsGrim";
         name = COMPONENT_NAME;
@@ -14,4 +14,4 @@ class CfgPatches {
     };
 };
 
-#include "CfgEventHandlers.hpp"
+#include "CfgFunctions.hpp"

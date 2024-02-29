@@ -15,3 +15,4 @@
 #endif
 
 #include "\z\skua\addons\main\script_macros.hpp"
+#include "\z\skua\addons\perks\perkstats.hpp"
