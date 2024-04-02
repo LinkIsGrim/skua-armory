@@ -14,6 +14,8 @@ Don't.
 
 # FAQ
 
+### Why?
+Someone on Reddit asked me to make this public.
 ### How do I install this?
 You don't.
 ### Workshop/GitHub release?
