@@ -13,7 +13,7 @@ class CfgVehicles {
         ace_dragging_canDrag = 1;
         ace_dragging_canCarry = 1;
         ace_cargo_size = 2;
-        ace_cargo_space = 2;
+        ace_cargo_space = 5;
         ace_cargo_canLoad = 1;
         ace_cargo_hasCargo = 1;
         class TransportItems {};
