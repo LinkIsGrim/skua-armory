@@ -15,3 +15,4 @@ PREP(moduleArsenalAddArea);
 PREP(moduleArsenalSetReference);
 PREP(moduleLogisticsAddArea);
 PREP(openBaseArsenal);
+PREP(missionHint);
