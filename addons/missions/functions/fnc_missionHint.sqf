@@ -1,6 +1,6 @@
 #include "..\script_component.hpp"
 /*
- * Authors: [Geddie]
+ * Authors: Geddie
  * Display welcome message to player joining server
  *
  * Arguments:
