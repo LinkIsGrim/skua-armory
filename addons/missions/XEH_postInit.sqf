@@ -17,5 +17,9 @@ if (isServer) then {
 };
 
 if (isServer && isMultiplayer) then {
-    [QGVAR(missionStarted), []] call CBA_fnc_globalEventJIP;
+    [{
+        [{time > 0}, {
+            [QGVAR(missionStarted), []] call CBA_fnc_globalEventJIP;
+        }] call CBA_fnc_waitUntilAndExecute; 
+    }] call CBA_fnc_execNextFrame;
 };

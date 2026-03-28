@@ -16,6 +16,7 @@ class CfgPatches {
     };
 };
 
+#include "CfgCommands.hpp"
 #include "CfgEditorSubcategories.hpp"
 #include "CfgEventHandlers.hpp"
 #include "CfgModuleCategories.hpp"
