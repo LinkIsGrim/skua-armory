@@ -32,4 +32,8 @@ GVAR(baseArsenals) = createHashMapFromArray [
     [civilian, objNull]
 ];
 
+if (hasInterface) then {
+    [QGVAR(missionStarted), LINKFUNC(missionHint)] call CBA_fnc_addEventHandler;
+};
+
 ADDON = true;

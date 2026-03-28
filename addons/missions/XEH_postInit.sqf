@@ -15,3 +15,11 @@ if (isServer) then {
 
     publicVariable QGVAR(baseArsenals); // make sure to sync
 };
+
+if (isServer && isMultiplayer) then {
+    [{
+        [{time > 0}, {
+            [QGVAR(missionStarted), []] call CBA_fnc_globalEventJIP;
+        }] call CBA_fnc_waitUntilAndExecute; 
+    }] call CBA_fnc_execNextFrame;
+};

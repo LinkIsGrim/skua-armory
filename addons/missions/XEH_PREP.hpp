@@ -11,6 +11,7 @@ PREP(logistics_makeLogiObjectAction);
 PREP(logistics_onPull60mmAmmo);
 PREP(logistics_onPullFuelCanister);
 PREP(makeLogisticsActions);
+PREP(missionHint);
 PREP(moduleArsenalAddArea);
 PREP(moduleArsenalSetReference);
 PREP(moduleLogisticsAddArea);
