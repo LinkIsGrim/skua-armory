@@ -9,10 +9,10 @@ ace_advanced_ballistics_simulationInterval = 0.05;
 // ACE Advanced Fatigue
 ace_advanced_fatigue_enabled = true;
 ace_advanced_fatigue_enableStaminaBar = true;
-ace_advanced_fatigue_loadFactor = 0.8;
-ace_advanced_fatigue_performanceFactor = 1.1;
+ace_advanced_fatigue_loadFactor = 0.6;
+ace_advanced_fatigue_performanceFactor = 1.2;
 ace_advanced_fatigue_recoveryFactor = 2;
-ace_advanced_fatigue_terrainGradientFactor = 1;
+ace_advanced_fatigue_terrainGradientFactor = 0.7;
 
 // ACE Advanced Vehicle Damage
 ace_vehicle_damage_enableCarDamage = false;
