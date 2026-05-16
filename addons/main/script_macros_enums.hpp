@@ -1,5 +1,6 @@
 // parseNumber is slower than comparing the string directly, so we'll just deal with it
-// these should match the Rust extension code
-#define DATABASESTATE_CONNECTING ("0")
-#define DATABASESTATE_CONNECTED  ("1")
-#define DATABASESTATE_FAILED     ("2")
+// these MUST match the Rust extension's DatabaseState enum (see extension/src/database/state.rs)
+#define DATABASESTATE_AWAITCONNECT       ("0")
+#define DATABASESTATE_CONNECTEDINIT      ("1")
+#define DATABASESTATE_CONNECTEDAWAITINIT ("2")
+#define DATABASESTATE_FAILED             ("3")

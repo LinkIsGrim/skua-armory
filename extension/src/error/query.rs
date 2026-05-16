@@ -1,0 +1,131 @@
+//! Query state and result types for Arma interop.
+
+use std::error::Error;
+use std::fmt::Display;
+
+use arma_rs::{FromArma, IntoArma};
+use serde::Serialize;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[repr(u8)]
+pub enum QueryState {
+    Processing = 0,
+    Done = 1,
+    InvalidArgument = 2,
+    TransientFailure = 3,
+}
+
+impl TryFrom<u8> for QueryState {
+    type Error = std::io::Error;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(QueryState::Processing),
+            1 => Ok(QueryState::Done),
+            2 => Ok(QueryState::InvalidArgument),
+            3 => Ok(QueryState::TransientFailure),
+            _ => Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "Unknown QueryState value",
+            )),
+        }
+    }
+}
+
+impl IntoArma for QueryState {
+    fn to_arma(&self) -> arma_rs::Value {
+        arma_rs::Value::Number((*self as u8).into())
+    }
+}
+
+impl FromArma for QueryState {
+    fn from_arma(s: String) -> Result<Self, arma_rs::FromArmaError> {
+        let v: u8 = s
+            .parse()
+            .map_err(|_| arma_rs::FromArmaError::Custom("Invalid number".into()))?;
+        QueryState::try_from(v)
+            .map_err(|_| arma_rs::FromArmaError::Custom("Invalid enum value".into()))
+    }
+}
+
+#[derive(Debug, IntoArma, FromArma, Serialize)]
+pub struct QueryError {
+    #[arma(to_string)]
+    pub code: String,
+    #[arma(to_string)]
+    pub message: String,
+    #[arma(to_string)]
+    pub location: String,
+}
+
+impl Display for QueryError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}: {} at {}", self.code, self.message, self.location)
+    }
+}
+
+impl Error for QueryError {}
+
+#[derive(Debug, Serialize)]
+pub struct QueryResult {
+    pub state: QueryState,
+    pub error: Option<QueryError>,
+}
+
+impl QueryResult {
+    pub fn new(state: QueryState) -> Self {
+        Self { state, error: None }
+    }
+
+    pub fn done() -> Self {
+        Self::new(QueryState::Done)
+    }
+
+    pub fn processing() -> Self {
+        Self::new(QueryState::Processing)
+    }
+}
+
+impl PartialEq<QueryState> for QueryResult {
+    fn eq(&self, other: &QueryState) -> bool {
+        &self.state == other
+    }
+}
+
+impl IntoArma for QueryResult {
+    fn to_arma(&self) -> arma_rs::Value {
+        if let Some(error) = &self.error {
+            arma_rs::Value::Array(vec![self.state.to_arma(), error.to_arma()])
+        } else {
+            arma_rs::Value::Array(vec![self.state.to_arma()])
+        }
+    }
+}
+
+impl FromArma for QueryResult {
+    fn from_arma(s: String) -> Result<Self, arma_rs::FromArmaError> {
+        let value = arma_rs::Value::from_arma(s)?;
+
+        if let arma_rs::Value::Array(arr) = value {
+            if arr.is_empty() {
+                return Err(arma_rs::FromArmaError::InvalidLength {
+                    expected: 1,
+                    actual: 0,
+                });
+            }
+
+            let state = QueryState::from_arma(arr[0].to_string())?;
+            let error = if arr.len() > 1 {
+                Some(QueryError::from_arma(arr[1].to_string())?)
+            } else {
+                None
+            };
+
+            Ok(QueryResult { state, error })
+        } else {
+            Err(arma_rs::FromArmaError::InvalidPrimitive(
+                "Expected array".into(),
+            ))
+        }
+    }
+}
