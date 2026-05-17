@@ -11,9 +11,14 @@ pub use core::RUNTIME;
 pub mod error;
 pub use error::{DbError, QueryError, QueryResult, QueryState};
 
+pub mod certification;
 pub mod database;
+pub mod domain;
 pub mod editor;
 pub mod logging;
+pub mod ranks;
+
+pub use domain::PlayerId;
 
 #[arma]
 fn init() -> Extension {
@@ -25,6 +30,8 @@ fn init() -> Extension {
         // Command groups
         .group("logger", logging::group())
         .group("database", database::group())
+        .group("certification", certification::group())
+        .group("ranks", ranks::group())
         .finish();
 
     logging::init(ext.context());

@@ -17,6 +17,7 @@ pub mod master {
         include_str!("sql/031_master_player_certs_idx_steam.sql");
     pub const PLAYER_CERTS_IDX_CERT: &str =
         include_str!("sql/032_master_player_certs_idx_cert.sql");
+    pub const MIGRATION_STATE: &str = include_str!("sql/013_master_migration_state.sql");
 }
 
 /// Campaign schema templates (100-199). Each template contains `${campaign_id}`

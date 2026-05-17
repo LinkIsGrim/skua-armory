@@ -254,6 +254,7 @@ mod integration_tests {
             "campaigns",
             "player_info",
             "player_certs",
+            "migration_state",
         ];
 
         for table in expected_tables {
@@ -279,6 +280,48 @@ mod integration_tests {
                 .unwrap_or_else(|e| panic!("Index query failed for {}: {}", index, e))
                 .get(0);
             assert!(exists, "Index {} should exist in {}", index, schema);
+        }
+
+        // Default rank seeded by bootstrap_schema (called by bootstrap_master).
+        let default_rank_name: String = client
+            .query_one(
+                "SELECT display_name FROM skua_master.ranks WHERE id = 0",
+                &[],
+            )
+            .await
+            .expect("default rank query failed")
+            .get(0);
+        assert_eq!(
+            default_rank_name, "Unranked",
+            "bootstrap should seed (0, 'Unranked')"
+        );
+
+        // The embedded pilot.json cert should be present after migration.
+        let pilot_exists: bool = client
+            .query_one(
+                "SELECT EXISTS(SELECT 1 FROM skua_master.certifications WHERE id = 'pilot')",
+                &[],
+            )
+            .await
+            .expect("pilot cert query failed")
+            .get(0);
+        assert!(
+            pilot_exists,
+            "embedded pilot.json should have been migrated in"
+        );
+
+        // migration_state should have rows for both entity types.
+        for entity in ["certification", "rank"] {
+            let bumped: bool = client
+                .query_one(
+                    "SELECT EXISTS(SELECT 1 FROM skua_master.migration_state
+                     WHERE entity_type = $1)",
+                    &[&entity],
+                )
+                .await
+                .expect("migration_state query failed")
+                .get(0);
+            assert!(bumped, "migration_state should have entry for {}", entity);
         }
     }
 
