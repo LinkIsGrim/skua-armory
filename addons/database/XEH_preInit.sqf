@@ -8,6 +8,16 @@ PREP_RECOMPILE_END;
 
 #include "initSettings.inc.sqf"
 
+// Registered on every machine: the timeout event is a globalEventJIP and each
+// client surfaces it in their own systemChat.
+[QGVAR(bootstrapTimeout), {
+    params ["_state"];
+    ERROR_1("Database bootstrap timeout: state stuck at %1 after 60s.",_state);
+    if (hasInterface) then {
+        systemChat format ["[Skua] Database bootstrap timed out (state: %1). Persistence is unavailable this session.", _state];
+    };
+}] call CBA_fnc_addEventHandler;
+
 if (isServer) then {
     GVAR(state) = DATABASESTATE_AWAITCONNECT;
     GVAR(postLoadCode) = [];

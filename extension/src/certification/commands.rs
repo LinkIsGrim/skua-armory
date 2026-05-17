@@ -74,7 +74,8 @@ async fn run_list() -> QueryOutcome<String> {
 pub(super) async fn list_inner(client: &Client) -> Result<Vec<Certification>, QueryError> {
     let rows = client
         .query(
-            "SELECT id, display_name, document, grant_event, revoke_event
+            "SELECT id, display_name, document, description, perk, pay_bonus,
+                    grant_event, revoke_event, requires
              FROM skua_master.certifications
              ORDER BY id",
             &[],
@@ -88,8 +89,12 @@ pub(super) async fn list_inner(client: &Client) -> Result<Vec<Certification>, Qu
             id: row.get("id"),
             display_name: row.get("display_name"),
             document: row.get("document"),
+            description: row.get("description"),
+            perk: row.get("perk"),
+            pay_bonus: row.get("pay_bonus"),
             grant_event: row.get("grant_event"),
             revoke_event: row.get("revoke_event"),
+            requires: row.get("requires"),
         })
         .collect())
 }

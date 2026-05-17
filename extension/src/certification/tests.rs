@@ -9,14 +9,18 @@ mod wire_format {
             id: "pilot".into(),
             display_name: "Pilot".into(),
             document: "https://docs.example/pilot".into(),
+            description: "Pilot training.".into(),
+            perk: "Access to rotary aircraft.".into(),
+            pay_bonus: 1000,
             grant_event: "skua_cert_pilot".into(),
             revoke_event: "skua_cert_revoke_pilot".into(),
+            requires: vec!["rifleman".into()],
         }
     }
 
     /// `run_list` serializes `Vec<Certification>` to JSON; SQF parses with
     /// `fromJSON`. Lock the field names + shape so a struct rename can't
-    /// silently break SQF callers (the SQF side reads `certID`, not `id`).
+    /// silently break SQF callers.
     #[test]
     fn list_payload_is_json_array_of_objects() {
         let json = serde_json::to_string(&vec![sample()]).expect("serialize");
@@ -30,8 +34,12 @@ mod wire_format {
             "id",
             "display_name",
             "document",
+            "description",
+            "perk",
+            "pay_bonus",
             "grant_event",
             "revoke_event",
+            "requires",
         ] {
             assert!(
                 obj.contains_key(field),
@@ -40,8 +48,16 @@ mod wire_format {
         }
         assert_eq!(obj["id"], "pilot");
         assert_eq!(obj["display_name"], "Pilot");
+        assert_eq!(obj["pay_bonus"], 1000);
         assert_eq!(obj["grant_event"], "skua_cert_pilot");
         assert_eq!(obj["revoke_event"], "skua_cert_revoke_pilot");
+        assert_eq!(
+            obj["requires"]
+                .as_array()
+                .expect("requires is JSON array")
+                .len(),
+            1
+        );
     }
 
     /// `grant` / `load_player` callbacks ship a `{player_id, cert_id}` JSON
@@ -77,6 +93,19 @@ mod file_parsing {
     use super::super::migration::load_files;
     use super::super::types::CertificationFile;
 
+    /// Full JSON body with every required field set; tests omit one field at
+    /// a time to verify each is `NOT NULL` at the deserializer.
+    const COMPLETE_JSON: &str = r#"{
+        "display_name": "Pilot",
+        "document": "x",
+        "description": "d",
+        "perk": "p",
+        "pay_bonus": 100,
+        "grant_event": "g",
+        "revoke_event": "r",
+        "requires": []
+    }"#;
+
     #[test]
     fn embedded_rifleman_loads_cleanly() {
         let files = load_files().expect("load_files should succeed for prod fixtures");
@@ -88,37 +117,66 @@ mod file_parsing {
         assert_eq!(rifleman.1.grant_event, "skua_cert_rifleman");
         assert_eq!(rifleman.1.revoke_event, "skua_cert_revoke_rifleman");
         assert!(!rifleman.1.document.is_empty());
+        assert!(!rifleman.1.description.is_empty());
+        assert!(!rifleman.1.perk.is_empty());
+        assert_eq!(rifleman.1.pay_bonus, 2000);
+        assert!(rifleman.1.requires.is_empty(), "rifleman has no prereqs");
+    }
+
+    #[test]
+    fn complete_json_parses() {
+        let parsed: CertificationFile = serde_json::from_str(COMPLETE_JSON).unwrap();
+        assert_eq!(parsed.display_name, "Pilot");
+        assert_eq!(parsed.pay_bonus, 100);
+        assert!(parsed.requires.is_empty());
     }
 
     #[test]
     fn missing_display_name_rejected() {
-        let r: Result<CertificationFile, _> =
-            serde_json::from_str(r#"{"document": "x", "grant_event": "g", "revoke_event": "r"}"#);
-        assert!(r.is_err());
+        let body = COMPLETE_JSON.replace(r#""display_name": "Pilot","#, "");
+        assert!(serde_json::from_str::<CertificationFile>(&body).is_err());
     }
 
     #[test]
     fn missing_document_rejected() {
-        let r: Result<CertificationFile, _> = serde_json::from_str(
-            r#"{"display_name": "Pilot", "grant_event": "g", "revoke_event": "r"}"#,
-        );
-        assert!(r.is_err());
+        let body = COMPLETE_JSON.replace(r#""document": "x","#, "");
+        assert!(serde_json::from_str::<CertificationFile>(&body).is_err());
+    }
+
+    #[test]
+    fn missing_description_rejected() {
+        let body = COMPLETE_JSON.replace(r#""description": "d","#, "");
+        assert!(serde_json::from_str::<CertificationFile>(&body).is_err());
+    }
+
+    #[test]
+    fn missing_perk_rejected() {
+        let body = COMPLETE_JSON.replace(r#""perk": "p","#, "");
+        assert!(serde_json::from_str::<CertificationFile>(&body).is_err());
+    }
+
+    #[test]
+    fn missing_pay_bonus_rejected() {
+        let body = COMPLETE_JSON.replace(r#""pay_bonus": 100,"#, "");
+        assert!(serde_json::from_str::<CertificationFile>(&body).is_err());
     }
 
     #[test]
     fn missing_grant_event_rejected() {
-        let r: Result<CertificationFile, _> = serde_json::from_str(
-            r#"{"display_name": "Pilot", "document": "x", "revoke_event": "r"}"#,
-        );
-        assert!(r.is_err());
+        let body = COMPLETE_JSON.replace(r#""grant_event": "g","#, "");
+        assert!(serde_json::from_str::<CertificationFile>(&body).is_err());
     }
 
     #[test]
     fn missing_revoke_event_rejected() {
-        let r: Result<CertificationFile, _> = serde_json::from_str(
-            r#"{"display_name": "Pilot", "document": "x", "grant_event": "g"}"#,
-        );
-        assert!(r.is_err());
+        let body = COMPLETE_JSON.replace(r#""revoke_event": "r","#, "");
+        assert!(serde_json::from_str::<CertificationFile>(&body).is_err());
+    }
+
+    #[test]
+    fn missing_requires_rejected() {
+        let body = COMPLETE_JSON.replace(r#""requires": []"#, "");
+        assert!(serde_json::from_str::<CertificationFile>(&body).is_err());
     }
 
     #[test]
@@ -129,10 +187,13 @@ mod file_parsing {
 
     #[test]
     fn extra_fields_ignored() {
-        let r: Result<CertificationFile, _> = serde_json::from_str(
-            r#"{"display_name": "Pilot", "document": "x", "grant_event": "g", "revoke_event": "r", "extra": "ignored"}"#,
+        // combat_engineer.json uses perk_antistasi/perk_liberation alongside
+        // the canonical schema; those extras must round-trip silently.
+        let body = COMPLETE_JSON.replace(
+            r#""requires": []"#,
+            r#""requires": [], "perk_antistasi": "ignored""#,
         );
-        let parsed = r.unwrap();
+        let parsed: CertificationFile = serde_json::from_str(&body).unwrap();
         assert_eq!(parsed.display_name, "Pilot");
     }
 }
@@ -181,8 +242,12 @@ mod db_tests {
             CertificationFile {
                 display_name: display.to_string(),
                 document: format!("https://docs.example/{id}"),
+                description: format!("{display} certification."),
+                perk: format!("{display} perks."),
+                pay_bonus: 0,
                 grant_event: format!("skua_cert_{id}"),
                 revoke_event: format!("skua_cert_revoke_{id}"),
+                requires: Vec::new(),
             },
         )
     }
@@ -311,8 +376,10 @@ mod db_tests {
         client
             .execute(
                 "INSERT INTO skua_master.certifications
-                    (id, display_name, document, grant_event, revoke_event)
-                 VALUES ('xenoarchaeologist', 'Xeno', 'https://x', 'skua_cert_xeno', 'skua_cert_revoke_xeno')",
+                    (id, display_name, document, description, perk,
+                     grant_event, revoke_event)
+                 VALUES ('xenoarchaeologist', 'Xeno', 'https://x', 'd', 'p',
+                         'skua_cert_xeno', 'skua_cert_revoke_xeno')",
                 &[],
             )
             .await

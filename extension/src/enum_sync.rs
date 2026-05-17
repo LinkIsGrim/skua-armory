@@ -31,7 +31,9 @@ const QUERY_STATE_VARIANTS: &[(&str, QueryState)] = &[
 fn expected_hpp() -> String {
     let mut out = String::new();
 
-    out.push_str("// parseNumber is slower than comparing the string directly, so we'll just deal with it\n");
+    out.push_str(
+        "// parseNumber is slower than comparing the string directly, so we'll just deal with it\n",
+    );
     out.push_str("// these MUST match the Rust extension's DatabaseState enum (see extension/src/database/state.rs)\n");
     let width = DATABASE_STATE_VARIANTS
         .iter()
@@ -49,8 +51,12 @@ fn expected_hpp() -> String {
     }
 
     out.push('\n');
-    out.push_str("// QueryState appears in callback payloads as a bare number (after parseSimpleArray),\n");
-    out.push_str("// so these macros are scalars — match with `_state isEqualTo QUERYSTATE_DONE`.\n");
+    out.push_str(
+        "// QueryState appears in callback payloads as a bare number (after parseSimpleArray),\n",
+    );
+    out.push_str(
+        "// so these macros are scalars — match with `_state isEqualTo QUERYSTATE_DONE`.\n",
+    );
     out.push_str("// these MUST match the Rust extension's QueryState enum (see extension/src/error/query.rs)\n");
     let width = QUERY_STATE_VARIANTS
         .iter()
@@ -82,8 +88,8 @@ fn hpp_path() -> std::path::PathBuf {
 #[test]
 fn sqf_macros_match_rust_enums() {
     let path = hpp_path();
-    let actual = std::fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("read {}: {}", path.display(), e));
+    let actual =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("read {}: {}", path.display(), e));
     let expected = expected_hpp();
 
     if actual != expected {

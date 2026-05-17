@@ -72,13 +72,18 @@ pub(super) async fn apply_migration(
 ) -> Result<(), QueryResult> {
     let upsert_stmt = "
         INSERT INTO skua_master.certifications
-            (id, display_name, document, grant_event, revoke_event)
-        VALUES ($1, $2, $3, $4, $5)
+            (id, display_name, document, description, perk, pay_bonus,
+             grant_event, revoke_event, requires)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         ON CONFLICT (id) DO UPDATE
             SET display_name = EXCLUDED.display_name,
                 document     = EXCLUDED.document,
+                description  = EXCLUDED.description,
+                perk         = EXCLUDED.perk,
+                pay_bonus    = EXCLUDED.pay_bonus,
                 grant_event  = EXCLUDED.grant_event,
-                revoke_event = EXCLUDED.revoke_event";
+                revoke_event = EXCLUDED.revoke_event,
+                requires     = EXCLUDED.requires";
 
     for (id, file) in &files {
         if let Err(e) = client
@@ -88,8 +93,12 @@ pub(super) async fn apply_migration(
                     &id,
                     &file.display_name,
                     &file.document,
+                    &file.description,
+                    &file.perk,
+                    &file.pay_bonus,
                     &file.grant_event,
                     &file.revoke_event,
+                    &file.requires,
                 ],
             )
             .await

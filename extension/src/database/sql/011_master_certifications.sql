@@ -7,7 +7,11 @@ CREATE TABLE IF NOT EXISTS skua_master.certifications (
     id              TEXT PRIMARY KEY,
     display_name    TEXT NOT NULL UNIQUE,
     document        TEXT NOT NULL,
+    description     TEXT NOT NULL,
+    perk            TEXT NOT NULL,
+    pay_bonus       INTEGER NOT NULL DEFAULT 0,
     grant_event     TEXT NOT NULL,
     revoke_event    TEXT NOT NULL,
+    requires        TEXT[] NOT NULL DEFAULT '{}',
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
