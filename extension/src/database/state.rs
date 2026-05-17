@@ -58,7 +58,7 @@ pub struct AtomicDatabaseState {
 }
 
 impl AtomicDatabaseState {
-    pub fn new(state: DatabaseState) -> Self {
+    pub const fn new(state: DatabaseState) -> Self {
         Self {
             inner: AtomicU8::new(state as u8),
         }
@@ -69,7 +69,8 @@ impl AtomicDatabaseState {
             0 => DatabaseState::AwaitConnect,
             1 => DatabaseState::ConnectedInit,
             2 => DatabaseState::ConnectedAwaitInit,
-            _ => DatabaseState::Failed,
+            3 => DatabaseState::Failed,
+            n => unreachable!("invalid DatabaseState repr {n}"),
         }
     }
 

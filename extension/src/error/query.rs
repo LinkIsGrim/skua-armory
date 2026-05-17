@@ -4,9 +4,8 @@ use std::error::Error;
 use std::fmt::Display;
 
 use arma_rs::{FromArma, IntoArma};
-use serde::Serialize;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum QueryState {
     Processing = 0,
@@ -48,7 +47,7 @@ impl FromArma for QueryState {
     }
 }
 
-#[derive(Debug, IntoArma, FromArma, Serialize)]
+#[derive(Debug, IntoArma, FromArma)]
 pub struct QueryError {
     #[arma(to_string)]
     pub code: String,
@@ -66,7 +65,7 @@ impl Display for QueryError {
 
 impl Error for QueryError {}
 
-#[derive(Debug, Serialize)]
+#[derive(Debug)]
 pub struct QueryResult {
     pub state: QueryState,
     pub error: Option<QueryError>,

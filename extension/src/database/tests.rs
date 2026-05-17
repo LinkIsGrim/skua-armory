@@ -2,7 +2,70 @@
 //!
 //! Integration tests exercise the bootstrap logic against a real Postgres
 //! instance via testcontainers, so they require Docker. Unit tests (sync
-//! check, sanitize_key) have no external dependencies.
+//! check, sanitize_key, parse_campaign_arg, arma roundtrip) have no external
+//! dependencies.
+
+#[cfg(test)]
+mod arg_parsing {
+    use super::super::schema::parse_campaign_arg;
+
+    #[test]
+    fn empty_string_means_master_only() {
+        assert_eq!(parse_campaign_arg(""), Ok(None));
+    }
+
+    #[test]
+    fn valid_key_round_trips() {
+        assert_eq!(
+            parse_campaign_arg("valid_key"),
+            Ok(Some("valid_key".to_string()))
+        );
+    }
+
+    #[test]
+    fn dashes_and_spaces_normalize() {
+        assert_eq!(
+            parse_campaign_arg("My-Campaign Name"),
+            Ok(Some("my_campaign_name".to_string()))
+        );
+    }
+
+    #[test]
+    fn invalid_chars_reject() {
+        assert!(parse_campaign_arg("BAD!key").is_err());
+        assert!(parse_campaign_arg("bad/key").is_err());
+    }
+}
+
+#[cfg(test)]
+mod arma_roundtrip {
+    use super::super::state::DatabaseState;
+    use arma_rs::{FromArma, IntoArma, Value};
+
+    fn assert_round_trip(state: DatabaseState, expected_u8: u8) {
+        assert_eq!(state.to_arma(), Value::Number(expected_u8.into()));
+        let parsed = DatabaseState::from_arma(expected_u8.to_string()).expect("from_arma");
+        assert_eq!(parsed, state);
+    }
+
+    #[test]
+    fn all_variants_round_trip() {
+        assert_round_trip(DatabaseState::AwaitConnect, 0);
+        assert_round_trip(DatabaseState::ConnectedInit, 1);
+        assert_round_trip(DatabaseState::ConnectedAwaitInit, 2);
+        assert_round_trip(DatabaseState::Failed, 3);
+    }
+
+    #[test]
+    fn unknown_value_rejected() {
+        assert!(DatabaseState::from_arma("99".into()).is_err());
+    }
+
+    #[test]
+    fn non_numeric_rejected() {
+        assert!(DatabaseState::from_arma("nope".into()).is_err());
+    }
+}
 
 /// Verifies that `addons/main/script_macros_enums.hpp` stays in sync with the
 /// Rust `DatabaseState` enum. If you add/rename/reorder a variant, either run
@@ -142,7 +205,10 @@ mod integration_tests {
 
     #[test]
     fn sanitize_key_lowercases_and_replaces() {
-        assert_eq!(sanitize_key("My-Campaign Name").unwrap(), "my_campaign_name");
+        assert_eq!(
+            sanitize_key("My-Campaign Name").unwrap(),
+            "my_campaign_name"
+        );
     }
 
     #[test]
@@ -257,7 +323,11 @@ mod integration_tests {
             .await
             .expect("Schema query failed")
             .get(0);
-        assert!(schema_exists, "Campaign schema {} should exist", schema_name);
+        assert!(
+            schema_exists,
+            "Campaign schema {} should exist",
+            schema_name
+        );
 
         let expected_tables = ["player_data", "player_world_data", "world_data"];
         for table in expected_tables {
