@@ -38,7 +38,7 @@ pub(super) fn load_files_from_dir(
     let mut entries: Vec<(String, CertificationFile)> = Vec::new();
     for file in dir.files() {
         let path = file.path();
-        if !path.extension().is_some_and(|e| e == "json") {
+        if path.extension().is_none_or(|e| e != "json") {
             continue;
         }
         let id = path
@@ -95,7 +95,7 @@ pub(super) async fn apply_migration(
             .await
         {
             return Err(transient_error(
-                &format!("Failed to upsert certification {}", id),
+                &format!("Failed to upsert certification {id}"),
                 e,
             ));
         }

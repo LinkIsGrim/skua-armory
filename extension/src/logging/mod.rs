@@ -11,6 +11,6 @@ pub use layer::init;
 use std::sync::RwLock;
 use tracing::Level;
 
-/// Global log level filter (default: INFO). RwLock allows dynamic changes via
+/// Global log level filter (default: INFO). `RwLock` allows dynamic changes via
 /// `logger:set_level`.
 pub(crate) static LOG_LEVEL: RwLock<Level> = RwLock::new(Level::INFO);

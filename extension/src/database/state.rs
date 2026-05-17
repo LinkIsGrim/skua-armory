@@ -33,7 +33,7 @@ impl Display for DatabaseState {
             DatabaseState::ConnectedAwaitInit => "ConnectedAwaitInit",
             DatabaseState::Failed => "Failed",
         };
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 

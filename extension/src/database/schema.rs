@@ -62,7 +62,7 @@ pub(crate) async fn bootstrap_schema(client: &Client) -> Result<(), QueryResult>
 
     for (sql, desc) in statements {
         if let Err(e) = client.execute(*sql, &[]).await {
-            return Err(transient_error(&format!("Failed to create {}", desc), e));
+            return Err(transient_error(&format!("Failed to create {desc}"), e));
         }
     }
 
@@ -114,16 +114,16 @@ pub(super) async fn bootstrap_campaign(
     for (template, desc) in statements {
         let sql = template.replace("${campaign_id}", campaign_id);
         if let Err(e) = client.execute(&sql, &[]).await {
-            return Err(transient_error(&format!("Failed to create {}", desc), e));
+            return Err(transient_error(&format!("Failed to create {desc}"), e));
         }
     }
 
-    let register_sql = r#"
+    let register_sql = r"
         INSERT INTO skua_master.campaigns (campaign_id)
         VALUES ($1)
         ON CONFLICT (campaign_id) DO NOTHING
-    "#;
-    let campaign_id_formatted = format!("skua_campaign_{}", campaign_id);
+    ";
+    let campaign_id_formatted = format!("skua_campaign_{campaign_id}");
     if let Err(e) = client
         .execute(register_sql, &[&campaign_id_formatted])
         .await

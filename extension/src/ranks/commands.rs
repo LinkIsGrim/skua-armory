@@ -107,7 +107,7 @@ pub(super) async fn get_player_inner(
         .await
         .map_err(|e| transient_query_error("Failed to query player rank", e))?;
 
-    Ok(row.map(|r| r.get::<_, i16>("rank")).unwrap_or(0))
+    Ok(row.map_or(0, |r| r.get::<_, i16>("rank")))
 }
 
 // -- set_player --

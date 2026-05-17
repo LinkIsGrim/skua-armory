@@ -35,7 +35,7 @@ pub(super) fn load_files_from_dir(dir: &Dir<'_>) -> Result<Vec<RankFile>, String
     let mut entries: Vec<RankFile> = Vec::new();
     for file in dir.files() {
         let path = file.path();
-        if !path.extension().is_some_and(|e| e == "json") {
+        if path.extension().is_none_or(|e| e != "json") {
             continue;
         }
         let content = file

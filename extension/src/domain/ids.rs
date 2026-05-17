@@ -12,6 +12,7 @@ use tokio_postgres::types::{IsNull, ToSql, Type, private::BytesMut};
 pub struct PlayerId(u64);
 
 impl PlayerId {
+    #[must_use] 
     pub const fn new(raw: u64) -> Self {
         Self(raw)
     }
@@ -19,15 +20,18 @@ impl PlayerId {
     /// Casts the underlying `u64` to `i64` for use as a Postgres `BIGINT`
     /// parameter. Reinterprets the bits; round-trips losslessly through the
     /// DB column as long as both sides use the same convention.
+    #[must_use] 
     pub const fn as_i64(self) -> i64 {
         self.0 as i64
     }
 
     /// Reverse of [`as_i64`].
+    #[must_use] 
     pub const fn from_i64(raw: i64) -> Self {
         Self(raw as u64)
     }
 
+    #[must_use] 
     pub const fn raw(self) -> u64 {
         self.0
     }
@@ -58,7 +62,7 @@ impl FromArma for PlayerId {
         trimmed
             .parse::<u64>()
             .map(PlayerId)
-            .map_err(|e| arma_rs::FromArmaError::Custom(format!("invalid PlayerId: {}", e)))
+            .map_err(|e| arma_rs::FromArmaError::Custom(format!("invalid PlayerId: {e}")))
     }
 }
 

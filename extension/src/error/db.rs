@@ -11,8 +11,8 @@ pub enum DbError {
 impl std::fmt::Display for DbError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            DbError::Init(e) => write!(f, "database initialization failed: {}", e),
-            DbError::Pool(e) => write!(f, "pool connection failed: {}", e),
+            DbError::Init(e) => write!(f, "database initialization failed: {e}"),
+            DbError::Pool(e) => write!(f, "pool connection failed: {e}"),
         }
     }
 }

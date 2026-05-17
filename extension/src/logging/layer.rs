@@ -59,7 +59,7 @@ where
 
 struct MessageVisitor<'a>(&'a mut String);
 
-impl<'a> tracing::field::Visit for MessageVisitor<'a> {
+impl tracing::field::Visit for MessageVisitor<'_> {
     fn record_str(&mut self, field: &tracing::field::Field, value: &str) {
         if field.name() == "message" {
             *self.0 = value.to_string();
@@ -76,7 +76,7 @@ impl<'a> tracing::field::Visit for MessageVisitor<'a> {
             // `record_str` already handles plain string messages; this arm
             // covers non-string `tracing::field::display`/`debug` values used
             // as the message.
-            *self.0 = format!("{:?}", value);
+            *self.0 = format!("{value:?}");
         } else {
             if !self.0.is_empty() {
                 self.0.push_str(", ");
@@ -95,6 +95,6 @@ pub fn init(context: Context) {
     let subscriber = tracing_subscriber::registry().with(layer);
 
     if let Err(e) = subscriber.try_init() {
-        eprintln!("Failed to initialize tracing subscriber: {}", e);
+        eprintln!("Failed to initialize tracing subscriber: {e}");
     }
 }

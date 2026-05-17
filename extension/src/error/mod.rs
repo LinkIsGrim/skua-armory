@@ -35,7 +35,7 @@ where
         state: QueryState::TransientFailure,
         error: Some(QueryError {
             code: "UNAVAILABLE".to_string(),
-            message: format!("{}: {}", message, error),
+            message: format!("{message}: {error}"),
             location: format!("{}:{}", loc.file(), loc.line()),
         }),
     }
@@ -62,7 +62,7 @@ where
 
     QueryError {
         code: "UNAVAILABLE".to_string(),
-        message: format!("{}: {}", message, error),
+        message: format!("{message}: {error}"),
         location: format!("{}:{}", loc.file(), loc.line()),
     }
 }
