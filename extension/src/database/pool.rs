@@ -24,7 +24,7 @@ pub struct Database {
 }
 
 impl Database {
-    async fn init_from_env() -> Result<Self, tokio_postgres::Error> {
+    fn init_from_env() -> Self {
         let mut cfg = Config::new();
 
         // 127.0.0.1 not "localhost": Proton may not resolve localhost.
@@ -50,12 +50,16 @@ impl Database {
             .build()
             .expect("Failed to build postgres pool");
 
-        Ok(Self {
+        Self {
             pool,
             state: AtomicDatabaseState::new(DatabaseState::ConnectedAwaitInit),
-        })
+        }
     }
 
+    /// Gets a pooled Postgres client.
+    ///
+    /// # Errors
+    /// Returns a pool error if no client can be checked out from the pool.
     pub async fn get_conn(
         &self,
     ) -> Result<deadpool_postgres::Client, deadpool_postgres::PoolError> {
@@ -80,8 +84,12 @@ impl Database {
     }
 }
 
+/// Gets the lazily initialized database handle.
+///
+/// # Errors
+/// Returns a `tokio_postgres::Error` if the database configuration is invalid.
 pub async fn get_db() -> Result<&'static Database, tokio_postgres::Error> {
-    match DATABASE.get_or_try_init(Database::init_from_env).await {
+    match DATABASE.get_or_try_init(|| async { Ok(Database::init_from_env()) }).await {
         Ok(db) => Ok(db),
         Err(e) => {
             INIT_STATE.store(DatabaseState::Failed);
@@ -90,6 +98,11 @@ pub async fn get_db() -> Result<&'static Database, tokio_postgres::Error> {
     }
 }
 
+/// Gets a pooled database client.
+///
+/// # Errors
+/// Returns an init error if the database cannot be initialized, or a pool
+/// error if a client cannot be checked out.
 pub async fn get_client() -> Result<deadpool_postgres::Client, DbError> {
     let db = get_db().await.map_err(DbError::Init)?;
     db.get_conn().await.map_err(DbError::Pool)

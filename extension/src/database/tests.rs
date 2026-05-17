@@ -2,7 +2,7 @@
 //!
 //! Integration tests exercise the bootstrap logic against a real Postgres
 //! instance via testcontainers, so they require Docker. Unit tests (sync
-//! check, sanitize_key, parse_campaign_arg, arma roundtrip) have no external
+//! check, `sanitize_key`, `parse_campaign_arg`, and arma roundtrip tests have no external
 //! dependencies.
 
 #[cfg(test)]
@@ -73,6 +73,8 @@ mod arma_roundtrip {
 /// edit both at once.
 #[cfg(test)]
 mod enum_sync {
+    use std::fmt::Write;
+
     use super::super::state::DatabaseState;
 
     /// Source of truth: must contain every `DatabaseState` variant.
@@ -90,12 +92,13 @@ mod enum_sync {
         out.push_str("// these MUST match the Rust extension's DatabaseState enum (see extension/src/database/state.rs)\n");
         let width = VARIANTS.iter().map(|(n, _)| n.len()).max().unwrap_or(0);
         for (name, state) in VARIANTS {
-            out.push_str(&format!(
-                "#define DATABASESTATE_{name:<width$} (\"{value}\")\n",
+            let _ = writeln!(
+                out,
+                "#define DATABASESTATE_{name:<width$} (\"{value}\")",
                 name = name,
                 width = width,
                 value = *state as u8,
-            ));
+            );
         }
         out
     }
@@ -141,7 +144,7 @@ mod integration_tests {
 
     use super::super::schema::{bootstrap_campaign, bootstrap_master, sanitize_key};
 
-    async fn create_test_pool(host: &str, port: u16) -> Pool {
+    fn create_test_pool(host: &str, port: u16) -> Pool {
         let mut cfg = Config::new();
         cfg.host(host);
         cfg.port(port);
@@ -175,30 +178,30 @@ mod integration_tests {
             .await
             .expect("Failed to get port");
 
-        let pool = create_test_pool(&host.to_string(), port).await;
+        let pool = create_test_pool(&host.to_string(), port);
         (container, pool)
     }
 
-    const SCHEMA_EXISTS_QUERY: &str = r#"
+    const SCHEMA_EXISTS_QUERY: &str = r"
         SELECT EXISTS (
             SELECT 1 FROM information_schema.schemata
             WHERE schema_name = $1
         )
-    "#;
+    ";
 
-    const TABLE_EXISTS_QUERY: &str = r#"
+    const TABLE_EXISTS_QUERY: &str = r"
         SELECT EXISTS (
             SELECT 1 FROM information_schema.tables
             WHERE table_schema = $1 AND table_name = $2
         )
-    "#;
+    ";
 
-    const INDEX_EXISTS_QUERY: &str = r#"
+    const INDEX_EXISTS_QUERY: &str = r"
         SELECT EXISTS (
             SELECT 1 FROM pg_indexes
             WHERE schemaname = $1 AND indexname = $2
         )
-    "#;
+    ";
 
     // -------------------------------------------------------------------------
     // sanitize_key (pure)
@@ -261,9 +264,9 @@ mod integration_tests {
             let exists: bool = client
                 .query_one(TABLE_EXISTS_QUERY, &[&"skua_master", &table])
                 .await
-                .unwrap_or_else(|e| panic!("Table query failed for {}: {}", table, e))
+                .unwrap_or_else(|e| panic!("Table query failed for {table}: {e}"))
                 .get(0);
-            assert!(exists, "Table {} should exist in skua_master", table);
+            assert!(exists, "Table {table} should exist in skua_master");
         }
 
         let expected_indexes = [
@@ -277,9 +280,9 @@ mod integration_tests {
             let exists: bool = client
                 .query_one(INDEX_EXISTS_QUERY, &[&schema, &index])
                 .await
-                .unwrap_or_else(|e| panic!("Index query failed for {}: {}", index, e))
+                .unwrap_or_else(|e| panic!("Index query failed for {index}: {e}"))
                 .get(0);
-            assert!(exists, "Index {} should exist in {}", index, schema);
+            assert!(exists, "Index {index} should exist in {schema}");
         }
 
         // Default rank seeded by bootstrap_schema (called by bootstrap_master).
@@ -321,7 +324,7 @@ mod integration_tests {
                 .await
                 .expect("migration_state query failed")
                 .get(0);
-            assert!(bumped, "migration_state should have entry for {}", entity);
+            assert!(bumped, "migration_state should have entry for {entity}");
         }
     }
 
@@ -368,8 +371,7 @@ mod integration_tests {
             .get(0);
         assert!(
             schema_exists,
-            "Campaign schema {} should exist",
-            schema_name
+            "Campaign schema {schema_name} should exist"
         );
 
         let expected_tables = ["player_data", "player_world_data", "world_data"];
@@ -377,9 +379,9 @@ mod integration_tests {
             let exists: bool = client
                 .query_one(TABLE_EXISTS_QUERY, &[&schema_name, &table])
                 .await
-                .unwrap_or_else(|e| panic!("Table query failed for {}: {}", table, e))
+                .unwrap_or_else(|e| panic!("Table query failed for {table}: {e}"))
                 .get(0);
-            assert!(exists, "Table {} should exist in {}", table, schema_name);
+            assert!(exists, "Table {table} should exist in {schema_name}");
         }
 
         let expected_indexes = ["idx_player_world_data_world", "idx_world_data_world"];
@@ -387,9 +389,9 @@ mod integration_tests {
             let exists: bool = client
                 .query_one(INDEX_EXISTS_QUERY, &[&schema_name, &index])
                 .await
-                .unwrap_or_else(|e| panic!("Index query failed for {}: {}", index, e))
+                .unwrap_or_else(|e| panic!("Index query failed for {index}: {e}"))
                 .get(0);
-            assert!(exists, "Index {} should exist in {}", index, schema_name);
+            assert!(exists, "Index {index} should exist in {schema_name}");
         }
 
         let registered: bool = client
@@ -435,17 +437,17 @@ mod integration_tests {
         for c in campaigns {
             bootstrap_campaign(&client, c)
                 .await
-                .unwrap_or_else(|e| panic!("bootstrap_campaign {} failed: {:?}", c, e));
+                .unwrap_or_else(|e| panic!("bootstrap_campaign {c} failed: {e:?}"));
         }
 
         for c in campaigns {
-            let schema = format!("skua_campaign_{}", c);
+            let schema = format!("skua_campaign_{c}");
             let exists: bool = client
                 .query_one(SCHEMA_EXISTS_QUERY, &[&schema])
                 .await
                 .expect("Query failed")
                 .get(0);
-            assert!(exists, "Campaign schema {} should exist", schema);
+            assert!(exists, "Campaign schema {schema} should exist");
         }
     }
 }

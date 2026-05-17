@@ -62,7 +62,7 @@ impl FromArma for PlayerId {
         trimmed
             .parse::<u64>()
             .map(PlayerId)
-            .map_err(|e| arma_rs::FromArmaError::Custom(format!("invalid PlayerId: {e}")))
+            .map_err(|_| arma_rs::FromArmaError::Custom("Invalid number".into()))
     }
 }
 
@@ -93,24 +93,26 @@ mod tests {
     use super::*;
     use arma_rs::Value;
 
+    const SAMPLE_STEAM_ID: u64 = 76_561_198_000_000_000;
+
     #[test]
     fn display_emits_decimal() {
         assert_eq!(
-            PlayerId::new(76561198000000000).to_string(),
-            "76561198000000000"
+            PlayerId::new(SAMPLE_STEAM_ID).to_string(),
+            SAMPLE_STEAM_ID.to_string()
         );
     }
 
     #[test]
     fn from_arma_accepts_bare_digits() {
-        let parsed = PlayerId::from_arma("76561198000000000".into()).unwrap();
-        assert_eq!(parsed, PlayerId::new(76561198000000000));
+        let parsed = PlayerId::from_arma(SAMPLE_STEAM_ID.to_string()).unwrap();
+        assert_eq!(parsed, PlayerId::new(SAMPLE_STEAM_ID));
     }
 
     #[test]
     fn from_arma_accepts_quoted_digits() {
-        let parsed = PlayerId::from_arma("\"76561198000000000\"".into()).unwrap();
-        assert_eq!(parsed, PlayerId::new(76561198000000000));
+        let parsed = PlayerId::from_arma(format!("\"{SAMPLE_STEAM_ID}\"")).unwrap();
+        assert_eq!(parsed, PlayerId::new(SAMPLE_STEAM_ID));
     }
 
     #[test]
@@ -139,7 +141,7 @@ mod tests {
 
     #[test]
     fn as_i64_round_trip_for_typical_steam_id() {
-        let p = PlayerId::new(76561198000000000);
+        let p = PlayerId::new(SAMPLE_STEAM_ID);
         assert_eq!(PlayerId::from_i64(p.as_i64()), p);
     }
 

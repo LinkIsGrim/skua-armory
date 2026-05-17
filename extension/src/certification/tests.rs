@@ -17,8 +17,7 @@ mod types_arma {
         let arma = cert.to_arma();
         let Value::Array(items) = arma else {
             panic!(
-                "Certification should serialize as Value::Array, got {:?}",
-                arma
+                "Certification should serialize as Value::Array, got {arma:?}"
             );
         };
         assert_eq!(items.len(), 5, "expected 5 fields in IntoArma output");
@@ -32,7 +31,7 @@ mod types_arma {
         .iter()
         .enumerate()
         {
-            assert_eq!(items[i], Value::String((*expected).into()), "field {}", i);
+            assert_eq!(items[i], Value::String((*expected).into()), "field {i}");
         }
     }
 }
@@ -145,9 +144,9 @@ mod db_tests {
             id.to_string(),
             CertificationFile {
                 display_name: display.to_string(),
-                document: format!("https://docs.example/{}", id),
-                grant_event: format!("skua_cert_{}", id),
-                revoke_event: format!("skua_cert_revoke_{}", id),
+                document: format!("https://docs.example/{id}"),
+                grant_event: format!("skua_cert_{id}"),
+                revoke_event: format!("skua_cert_revoke_{id}"),
             },
         )
     }
@@ -339,7 +338,7 @@ mod db_tests {
             .await
             .unwrap();
 
-        let player = PlayerId::new(76561198000000000);
+        let player = PlayerId::new(76_561_198_000_000_000);
         grant_inner(&mut client, player, "pilot")
             .await
             .expect("grant");

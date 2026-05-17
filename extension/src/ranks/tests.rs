@@ -13,7 +13,7 @@ mod types_arma {
         };
         let arma = rank.to_arma();
         let Value::Array(items) = arma else {
-            panic!("Rank should serialize as Value::Array, got {:?}", arma);
+            panic!("Rank should serialize as Value::Array, got {arma:?}");
         };
         assert_eq!(items.len(), 2);
         assert_eq!(items[0], Value::Number(5.0));
