@@ -172,7 +172,7 @@ pub(super) async fn do_bootstrap(campaign_id: Option<String>) -> QueryResult {
 /// Arma-callable entry point. Spawns the bootstrap onto the global runtime and
 /// returns `Processing`; result is delivered via `skua:database` callback.
 pub fn bootstrap(ctx: Context, campaign_id: String) -> QueryState {
-    let Ok(campaign) = parse_campaign_arg(campaign_id) else {
+    let Ok(campaign) = parse_campaign_arg(&campaign_id) else {
         return QueryState::InvalidArgument;
     };
 
