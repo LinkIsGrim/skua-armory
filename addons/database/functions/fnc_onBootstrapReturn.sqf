@@ -20,8 +20,18 @@ TRACE_1("fnc_onBootstrapReturn",_this);
 
 (parseSimpleArray _data) params ["_status", "_return"];
 
+// TransientFailure = Postgres unreachable, transient network/auth issue, etc.
+// Retry every 10s so the server self-heals once the DB comes back up.
+if (_status == QUERYSTATE_TRANSIENTFAILURE) exitWith {
+    WARNING_1("Database bootstrap transient failure; retrying in 10s. %1",_return);
+    [{
+        INFO("Retrying database bootstrap...");
+        GVAR(campaignKey) call FUNC(bootstrap);
+    }, [], 10] call CBA_fnc_waitAndExecute;
+};
+
 if (_status != QUERYSTATE_DONE) exitWith {
-    ERROR_2("Database bootstrap failed: %1: %2",_status,_return);
+    ERROR_2("Database bootstrap failed (non-recoverable): %1: %2",_status,_return);
 };
 
 GVAR(state) = DATABASESTATE_CONNECTEDAWAITINIT;
