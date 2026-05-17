@@ -1,0 +1,6 @@
+{
+    "display_name": "Medic",
+    "document": "https://docs.skua.international/certs/medic",
+    "grant_event": "skua_cert_medic",
+    "revoke_event": "skua_cert_revoke_medic"
+}
