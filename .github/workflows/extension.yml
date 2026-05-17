@@ -33,7 +33,7 @@ jobs:
 
     - name: cargo clippy
       working-directory: extension
-      run: cargo clippy --locked --all-targets -- -D warnings
+      run: cargo clippy --locked --all-targets -- -D warnings -W clippy::pedantic
 
     # ubuntu-latest has Docker pre-installed; testcontainers picks it up.
     - name: cargo test
