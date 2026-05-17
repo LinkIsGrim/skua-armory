@@ -12,7 +12,7 @@ Shit that can't be done or is extremely inconvenient to do inside Arma, like gen
 
 ### For Windows
 
-- Install cargo-xwin: `cargo install xwin --locked`
+- Install cargo-xwin: `cargo install cargo-xwin --locked`
 - Add the target: `rustup target add x86_64-pc-windows-msvc`
 - Build: `cargo xwin build --release --target x86_64-pc-windows-msvc`
 

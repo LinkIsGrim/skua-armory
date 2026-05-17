@@ -6,6 +6,9 @@ echo "Building Linux"
 cross build --target x86_64-unknown-linux-gnu --release
 
 echo "Building Windows"
+if ! command -v cargo-xwin >/dev/null 2>&1; then
+	cargo install cargo-xwin --locked
+fi
 cargo xwin build --release --target x86_64-pc-windows-msvc
 
 echo "Moving compiled binaries to repository root"
