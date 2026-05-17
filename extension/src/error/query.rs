@@ -143,10 +143,9 @@ impl<T: IntoArma> IntoArma for QueryOutcome<T> {
             QueryOutcome::Done(data) => {
                 arma_rs::Value::Array(vec![QueryState::Done.to_arma(), data.to_arma()])
             }
-            QueryOutcome::Failed(err) => arma_rs::Value::Array(vec![
-                QueryState::TransientFailure.to_arma(),
-                err.to_arma(),
-            ]),
+            QueryOutcome::Failed(err) => {
+                arma_rs::Value::Array(vec![QueryState::TransientFailure.to_arma(), err.to_arma()])
+            }
         }
     }
 }

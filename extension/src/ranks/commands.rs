@@ -39,10 +39,7 @@ async fn run_list() -> QueryOutcome<Vec<Rank>> {
     let client = match get_client().await {
         Ok(c) => c,
         Err(e) => {
-            return QueryOutcome::Failed(transient_query_error(
-                "Failed to get database client",
-                e,
-            ));
+            return QueryOutcome::Failed(transient_query_error("Failed to get database client", e));
         }
     };
     match list_inner(&client).await {
@@ -86,10 +83,7 @@ async fn run_get_player(player_id: PlayerId) -> QueryOutcome<i16> {
     let client = match get_client().await {
         Ok(c) => c,
         Err(e) => {
-            return QueryOutcome::Failed(transient_query_error(
-                "Failed to get database client",
-                e,
-            ));
+            return QueryOutcome::Failed(transient_query_error("Failed to get database client", e));
         }
     };
     match get_player_inner(&client, player_id).await {
@@ -132,10 +126,7 @@ async fn run_set_player(player_id: PlayerId, rank_id: i16) -> QueryOutcome<Vec<S
     let mut client = match get_client().await {
         Ok(c) => c,
         Err(e) => {
-            return QueryOutcome::Failed(transient_query_error(
-                "Failed to get database client",
-                e,
-            ));
+            return QueryOutcome::Failed(transient_query_error("Failed to get database client", e));
         }
     };
     match set_player_inner(&mut client, player_id, rank_id).await {

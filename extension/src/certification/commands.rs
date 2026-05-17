@@ -45,10 +45,7 @@ async fn run_list() -> QueryOutcome<Vec<Certification>> {
     let client = match get_client().await {
         Ok(c) => c,
         Err(e) => {
-            return QueryOutcome::Failed(transient_query_error(
-                "Failed to get database client",
-                e,
-            ));
+            return QueryOutcome::Failed(transient_query_error("Failed to get database client", e));
         }
     };
     match list_inner(&client).await {
@@ -97,10 +94,7 @@ async fn run_get_player(player_id: PlayerId) -> QueryOutcome<Vec<String>> {
     let client = match get_client().await {
         Ok(c) => c,
         Err(e) => {
-            return QueryOutcome::Failed(transient_query_error(
-                "Failed to get database client",
-                e,
-            ));
+            return QueryOutcome::Failed(transient_query_error("Failed to get database client", e));
         }
     };
     match get_player_inner(&client, player_id).await {
@@ -146,10 +140,7 @@ async fn run_grant(player_id: PlayerId, cert_id: &str) -> QueryOutcome<Vec<Strin
     let mut client = match get_client().await {
         Ok(c) => c,
         Err(e) => {
-            return QueryOutcome::Failed(transient_query_error(
-                "Failed to get database client",
-                e,
-            ));
+            return QueryOutcome::Failed(transient_query_error("Failed to get database client", e));
         }
     };
     match grant_inner(&mut client, player_id, cert_id).await {
@@ -210,10 +201,7 @@ async fn run_revoke(player_id: PlayerId, cert_id: &str) -> QueryOutcome<Vec<Stri
     let client = match get_client().await {
         Ok(c) => c,
         Err(e) => {
-            return QueryOutcome::Failed(transient_query_error(
-                "Failed to get database client",
-                e,
-            ));
+            return QueryOutcome::Failed(transient_query_error("Failed to get database client", e));
         }
     };
     match revoke_inner(&client, player_id, cert_id).await {

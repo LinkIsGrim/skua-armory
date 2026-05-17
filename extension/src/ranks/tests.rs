@@ -151,11 +151,7 @@ mod db_tests {
 
         apply_migration(
             &client,
-            vec![
-                rank(0, "Unranked"),
-                rank(1, "Recruit"),
-                rank(5, "Sergeant"),
-            ],
+            vec![rank(0, "Unranked"), rank(1, "Recruit"), rank(5, "Sergeant")],
         )
         .await
         .expect("apply");
@@ -270,9 +266,7 @@ mod db_tests {
         let client = pool.get().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
 
-        let rank = get_player_inner(&client, PlayerId::new(404))
-            .await
-            .unwrap();
+        let rank = get_player_inner(&client, PlayerId::new(404)).await.unwrap();
         assert_eq!(rank, 0, "unknown player should report default rank 0");
     }
 

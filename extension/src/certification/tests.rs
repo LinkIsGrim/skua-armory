@@ -16,7 +16,10 @@ mod types_arma {
         };
         let arma = cert.to_arma();
         let Value::Array(items) = arma else {
-            panic!("Certification should serialize as Value::Array, got {:?}", arma);
+            panic!(
+                "Certification should serialize as Value::Array, got {:?}",
+                arma
+            );
         };
         assert_eq!(items.len(), 5, "expected 5 fields in IntoArma output");
         for (i, expected) in [
@@ -54,9 +57,8 @@ mod file_parsing {
 
     #[test]
     fn missing_display_name_rejected() {
-        let r: Result<CertificationFile, _> = serde_json::from_str(
-            r#"{"document": "x", "grant_event": "g", "revoke_event": "r"}"#,
-        );
+        let r: Result<CertificationFile, _> =
+            serde_json::from_str(r#"{"document": "x", "grant_event": "g", "revoke_event": "r"}"#);
         assert!(r.is_err());
     }
 
@@ -109,9 +111,7 @@ mod db_tests {
     use testcontainers_modules::testcontainers::runners::AsyncRunner;
     use tokio_postgres::{Config, NoTls};
 
-    use super::super::commands::{
-        get_player_inner, grant_inner, list_inner, revoke_inner,
-    };
+    use super::super::commands::{get_player_inner, grant_inner, list_inner, revoke_inner};
     use super::super::migration::apply_migration;
     use super::super::types::CertificationFile;
     use crate::database::bootstrap_schema;
@@ -163,7 +163,10 @@ mod db_tests {
         apply_migration(&client, vec![]).await.expect("apply empty");
 
         let count: i64 = client
-            .query_one("SELECT COUNT(*)::BIGINT FROM skua_master.certifications", &[])
+            .query_one(
+                "SELECT COUNT(*)::BIGINT FROM skua_master.certifications",
+                &[],
+            )
             .await
             .unwrap()
             .get(0);
@@ -178,7 +181,10 @@ mod db_tests {
             .await
             .unwrap()
             .get(0);
-        assert_eq!(marker, 1, "migration_state row should be bumped even on empty set");
+        assert_eq!(
+            marker, 1,
+            "migration_state row should be bumped even on empty set"
+        );
     }
 
     #[tokio::test]
@@ -226,9 +232,12 @@ mod db_tests {
         let client = pool.get().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
 
-        apply_migration(&client, vec![cert("pilot", "Pilot"), cert("medic", "Medic")])
-            .await
-            .expect("apply 1");
+        apply_migration(
+            &client,
+            vec![cert("pilot", "Pilot"), cert("medic", "Medic")],
+        )
+        .await
+        .expect("apply 1");
 
         // Backdate the pilot row so it predates last_migration_at; otherwise
         // the second migration's delete guard would protect it as "new since
@@ -305,9 +314,12 @@ mod db_tests {
         let (_c, pool) = start_pg().await;
         let client = pool.get().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
-        apply_migration(&client, vec![cert("pilot", "Pilot"), cert("medic", "Medic")])
-            .await
-            .unwrap();
+        apply_migration(
+            &client,
+            vec![cert("pilot", "Pilot"), cert("medic", "Medic")],
+        )
+        .await
+        .unwrap();
 
         let rows = list_inner(&client).await.unwrap();
         assert_eq!(rows.len(), 2);
@@ -328,7 +340,9 @@ mod db_tests {
             .unwrap();
 
         let player = PlayerId::new(76561198000000000);
-        grant_inner(&mut client, player, "pilot").await.expect("grant");
+        grant_inner(&mut client, player, "pilot")
+            .await
+            .expect("grant");
 
         let info_exists: bool = client
             .query_one(
@@ -364,8 +378,12 @@ mod db_tests {
             .unwrap();
 
         let player = PlayerId::new(1);
-        grant_inner(&mut client, player, "pilot").await.expect("grant 1");
-        grant_inner(&mut client, player, "pilot").await.expect("grant 2 (dup)");
+        grant_inner(&mut client, player, "pilot")
+            .await
+            .expect("grant 1");
+        grant_inner(&mut client, player, "pilot")
+            .await
+            .expect("grant 2 (dup)");
 
         let count: i64 = client
             .query_one(
@@ -454,5 +472,4 @@ mod db_tests {
             .await
             .expect("revoke noop");
     }
-
 }

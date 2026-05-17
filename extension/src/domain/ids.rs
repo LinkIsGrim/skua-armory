@@ -91,7 +91,10 @@ mod tests {
 
     #[test]
     fn display_emits_decimal() {
-        assert_eq!(PlayerId::new(76561198000000000).to_string(), "76561198000000000");
+        assert_eq!(
+            PlayerId::new(76561198000000000).to_string(),
+            "76561198000000000"
+        );
     }
 
     #[test]
