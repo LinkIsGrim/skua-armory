@@ -6,7 +6,7 @@ mod types_arma {
     use arma_rs::{IntoArma, Value};
 
     #[test]
-    fn into_arma_emits_array_of_five_strings() {
+    fn into_arma_emits_struct_map_fields() {
         let cert = Certification {
             id: "pilot".into(),
             display_name: "Pilot".into(),
@@ -19,17 +19,26 @@ mod types_arma {
             panic!("Certification should serialize as Value::Array, got {arma:?}");
         };
         assert_eq!(items.len(), 5, "expected 5 fields in IntoArma output");
-        for (i, expected) in [
-            "pilot",
-            "Pilot",
-            "https://docs.example/pilot",
-            "skua_cert_pilot",
-            "skua_cert_revoke_pilot",
-        ]
-        .iter()
-        .enumerate()
-        {
-            assert_eq!(items[i], Value::String((*expected).into()), "field {i}");
+
+        let expected = [
+            ("id", Value::String("pilot".into())),
+            ("display_name", Value::String("Pilot".into())),
+            (
+                "document",
+                Value::String("https://docs.example/pilot".into()),
+            ),
+            ("grant_event", Value::String("skua_cert_pilot".into())),
+            (
+                "revoke_event",
+                Value::String("skua_cert_revoke_pilot".into()),
+            ),
+        ];
+
+        for (key, value) in expected {
+            assert!(
+                items.contains(&Value::Array(vec![Value::String(key.into()), value])),
+                "missing field {key} in IntoArma output: {items:?}"
+            );
         }
     }
 }

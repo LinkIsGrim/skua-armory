@@ -52,14 +52,11 @@ pub(super) fn load_files_from_dir(dir: &Dir<'_>) -> Result<Vec<RankFile>, String
 /// Reconcile `files` into `skua_master.ranks`:
 ///   1. UPSERT every file's contents.
 ///   2. DELETE rows whose id isn't in `files` AND whose `created_at` predates
-///      the last successful migration.
+///      the last successful migration, except the default rank id=0.
 ///   3. Bump the `migration_state` marker.
 ///
 /// Default rank (id=0) is seeded by [`crate::database::schema::bootstrap_schema`]
-/// before this runs, so an empty file set won't delete it on cold start (its
-/// `created_at` equals `NOW()` at seed time, which is also `NOW()` for the
-/// first marker bump — the `<=` guard preserves the seed unless the operator
-/// explicitly removes it later via in-DB editing).
+/// before this runs, and is never pruned by migration.
 #[instrument(level = "debug", name = "rank_apply", skip(client, files))]
 pub(super) async fn apply_migration(
     client: &Client,
@@ -87,6 +84,7 @@ pub(super) async fn apply_migration(
     let delete_stmt = "
         DELETE FROM skua_master.ranks
         WHERE NOT (id = ANY($1::smallint[]))
+          AND id <> 0
           AND created_at <= COALESCE(
               (SELECT last_migration_at FROM skua_master.migration_state
                WHERE entity_type = $2),

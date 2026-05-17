@@ -6,7 +6,7 @@ mod types_arma {
     use arma_rs::{IntoArma, Value};
 
     #[test]
-    fn into_arma_emits_array_of_id_and_name() {
+    fn into_arma_emits_struct_map_fields() {
         let rank = Rank {
             id: 5,
             display_name: "Sergeant".into(),
@@ -16,8 +16,20 @@ mod types_arma {
             panic!("Rank should serialize as Value::Array, got {arma:?}");
         };
         assert_eq!(items.len(), 2);
-        assert_eq!(items[0], Value::Number(5.0));
-        assert_eq!(items[1], Value::String("Sergeant".into()));
+        assert!(
+            items.contains(&Value::Array(vec![
+                Value::String("id".into()),
+                Value::Number(5.0)
+            ])),
+            "missing id field in IntoArma output: {items:?}"
+        );
+        assert!(
+            items.contains(&Value::Array(vec![
+                Value::String("display_name".into()),
+                Value::String("Sergeant".into())
+            ])),
+            "missing display_name field in IntoArma output: {items:?}"
+        );
     }
 }
 
@@ -115,22 +127,14 @@ mod db_tests {
         let client = pool.get().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
 
-        // Default (0, 'Unranked') is seeded by bootstrap_schema. Empty
-        // migration should not delete it (it was just inserted, its
-        // created_at = NOW() and the new marker also = NOW(); the <= guard
-        // means it might or might not be preserved depending on clock
-        // resolution. To make this deterministic, we backdate the seed
-        // first and verify it survives anyway because no migration has run.
+        // Default (0, 'Unranked') is seeded by bootstrap_schema and is
+        // protected from migration pruning.
         apply_migration(&client, vec![]).await.expect("apply empty");
 
-        // First-ever apply: there was no prior `last_migration_at`, so
-        // COALESCE falls back to '-infinity', meaning all existing rows
-        // are eligible for delete. The seeded rank IS deleted by the very
-        // first empty migration.
-        // That's actually OK because the bootstrap_master flow always
-        // re-seeds the default rank BEFORE migrations run, so the default
-        // rank file (00_unranked.json) would re-insert it. For this unit
-        // test path we just verify the migration_state row was created.
+        let rows = list_inner(&client).await.unwrap();
+        let ids: Vec<i16> = rows.iter().map(|r| r.id).collect();
+        assert_eq!(ids, [0], "default rank should survive empty migration");
+
         let marker: i64 = client
             .query_one(
                 "SELECT COUNT(*)::BIGINT FROM skua_master.migration_state
@@ -208,10 +212,7 @@ mod db_tests {
 
         let rows = list_inner(&client).await.unwrap();
         let ids: Vec<i16> = rows.iter().map(|r| r.id).collect();
-        // 0 (seeded by bootstrap_schema) and 1 should remain; 2 deleted.
-        assert!(ids.contains(&0));
-        assert!(ids.contains(&1));
-        assert!(!ids.contains(&2));
+        assert_eq!(ids, [0, 1], "default and kept ranks should remain");
     }
 
     #[tokio::test]
