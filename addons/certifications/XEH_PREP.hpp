@@ -1,6 +1,6 @@
 PREP(extCallback);
+PREP(loadPlayerCerts);
 PREP(onCertificationListReturn);
-PREP(onClientConnected);
 PREP(onGrantReturn);
 PREP(runAfterCertsLoaded);
 PREP(updateCerts);

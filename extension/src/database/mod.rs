@@ -5,6 +5,7 @@
 //! - Arma-callable commands ([`commands`])
 
 mod commands;
+mod player;
 mod pool;
 mod schema;
 mod sql;

@@ -2,6 +2,7 @@
 
 use arma_rs::Group;
 
+use super::player::upsert_player;
 use super::pool::get_database_state;
 use super::schema::bootstrap;
 
@@ -9,4 +10,5 @@ pub fn group() -> Group {
     Group::new()
         .command("bootstrap", bootstrap)
         .command("state", get_database_state)
+        .command("upsert_player", upsert_player)
 }

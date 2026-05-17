@@ -44,36 +44,31 @@ mod wire_format {
         assert_eq!(obj["revoke_event"], "skua_cert_revoke_pilot");
     }
 
-    /// `grant` / `load_player` callbacks ship a `{playerID, id}` JSON
+    /// `grant` / `load_player` callbacks ship a `{player_id, cert_id}` JSON
     /// object consumed by `fnc_onGrantReturn`. Lock the key names + types
-    /// (player_id must be a string so `BIS_fnc_getUnitByUID` is happy).
+    /// (`player_id` must be a string so `BIS_fnc_getUnitByUID` is happy) by
+    /// serializing the actual prod struct — a rename in `PlayerCertEvent`
+    /// then immediately fails this test.
     #[test]
     fn grant_event_payload_shape() {
+        use super::super::commands::PlayerCertEvent;
         use crate::domain::PlayerId;
 
-        #[derive(serde::Serialize)]
-        struct Event<'a> {
-            #[serde(rename = "playerID")]
-            player_id: PlayerId,
-            #[serde(rename = "id")]
-            id: &'a str,
-        }
-
-        let json = serde_json::to_string(&Event {
+        let json = serde_json::to_string(&PlayerCertEvent {
             player_id: PlayerId::new(76_561_198_000_000_000),
-            id: "pilot",
+            cert_id: "pilot",
         })
         .expect("serialize");
         let parsed: serde_json::Value = serde_json::from_str(&json).expect("parse back");
         let obj = parsed.as_object().expect("object");
 
         assert_eq!(obj.len(), 2, "exactly two fields expected");
-        assert_eq!(obj["playerID"], "76561198000000000");
+        assert_eq!(obj["player_id"], "76561198000000000");
         assert!(
-            obj["playerID"].is_string(),
-            "playerID must serialize as a JSON string for BIS_fnc_getUnitByUID"
+            obj["player_id"].is_string(),
+            "player_id must serialize as a JSON string for BIS_fnc_getUnitByUID"
         );
-        assert_eq!(obj["id"], "pilot");
+        assert_eq!(obj["cert_id"], "pilot");
     }
 }
 
@@ -83,16 +78,16 @@ mod file_parsing {
     use super::super::types::CertificationFile;
 
     #[test]
-    fn embedded_pilot_loads_cleanly() {
+    fn embedded_rifleman_loads_cleanly() {
         let files = load_files().expect("load_files should succeed for prod fixtures");
-        let pilot = files
+        let rifleman = files
             .iter()
-            .find(|(id, _)| id == "pilot")
-            .expect("pilot.json should be embedded");
-        assert_eq!(pilot.1.display_name, "Pilot");
-        assert_eq!(pilot.1.grant_event, "skua_cert_pilot");
-        assert_eq!(pilot.1.revoke_event, "skua_cert_revoke_pilot");
-        assert!(!pilot.1.document.is_empty());
+            .find(|(id, _)| id == "rifleman")
+            .expect("rifleman.json should be embedded");
+        assert_eq!(rifleman.1.display_name, "Rifleman");
+        assert_eq!(rifleman.1.grant_event, "skua_cert_rifleman");
+        assert_eq!(rifleman.1.revoke_event, "skua_cert_revoke_rifleman");
+        assert!(!rifleman.1.document.is_empty());
     }
 
     #[test]

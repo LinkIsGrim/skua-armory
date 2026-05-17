@@ -232,18 +232,18 @@ mod integration_tests {
             "bootstrap should seed (0, 'Unranked')"
         );
 
-        // The embedded pilot.json cert should be present after migration.
-        let pilot_exists: bool = client
+        // The embedded rifleman.json cert should be present after migration.
+        let rifleman_exists: bool = client
             .query_one(
-                "SELECT EXISTS(SELECT 1 FROM skua_master.certifications WHERE id = 'pilot')",
+                "SELECT EXISTS(SELECT 1 FROM skua_master.certifications WHERE id = 'rifleman')",
                 &[],
             )
             .await
-            .expect("pilot cert query failed")
+            .expect("rifleman cert query failed")
             .get(0);
         assert!(
-            pilot_exists,
-            "embedded pilot.json should have been migrated in"
+            rifleman_exists,
+            "embedded rifleman.json should have been migrated in"
         );
 
         // migration_state should have rows for both entity types.
@@ -352,6 +352,113 @@ mod integration_tests {
         bootstrap_campaign(&client, "idempotent_test")
             .await
             .expect("second bootstrap_campaign should succeed (idempotent)");
+    }
+
+    // -------------------------------------------------------------------------
+    // upsert_player
+
+    use super::super::player::upsert_player_inner;
+    use crate::domain::PlayerId;
+
+    const TEST_STEAM_ID: u64 = 76_561_198_000_000_001;
+
+    #[tokio::test]
+    async fn upsert_player_inserts_on_first_call() {
+        let (_c, pool) = start_pg().await;
+        let client = pool.get().await.expect("Failed to get client");
+        bootstrap_master(&client)
+            .await
+            .expect("bootstrap_master should succeed");
+
+        let pid = PlayerId::new(TEST_STEAM_ID);
+        let info = upsert_player_inner(&client, pid, "TestPlayer")
+            .await
+            .expect("upsert should succeed");
+
+        assert_eq!(info.steam_id, pid);
+        assert_eq!(info.name, "TestPlayer");
+        assert!(!info.is_admin);
+        assert!(!info.is_banned);
+        assert_eq!(info.rank, 0);
+        // On insert, both timestamps default to NOW() in the same statement, so
+        // they should be equal (or essentially so).
+        assert_eq!(
+            info.first_seen, info.last_seen,
+            "first_seen should equal last_seen on insert"
+        );
+    }
+
+    #[tokio::test]
+    async fn upsert_player_updates_name_and_last_seen() {
+        let (_c, pool) = start_pg().await;
+        let client = pool.get().await.expect("Failed to get client");
+        bootstrap_master(&client)
+            .await
+            .expect("bootstrap_master should succeed");
+
+        let pid = PlayerId::new(TEST_STEAM_ID);
+        let first = upsert_player_inner(&client, pid, "OriginalName")
+            .await
+            .expect("first upsert should succeed");
+
+        // Sleep so last_seen NOW() has measurable progress.
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+
+        let second = upsert_player_inner(&client, pid, "RenamedPlayer")
+            .await
+            .expect("second upsert should succeed");
+
+        assert_eq!(second.steam_id, pid);
+        assert_eq!(second.name, "RenamedPlayer");
+        assert_eq!(
+            second.first_seen, first.first_seen,
+            "first_seen must be preserved across upserts"
+        );
+        assert!(
+            second.last_seen > first.last_seen,
+            "last_seen should advance on conflict-update; was {:?}, now {:?}",
+            first.last_seen,
+            second.last_seen,
+        );
+    }
+
+    #[tokio::test]
+    async fn upsert_player_preserves_admin_banned_rank_overrides() {
+        let (_c, pool) = start_pg().await;
+        let client = pool.get().await.expect("Failed to get client");
+        bootstrap_master(&client)
+            .await
+            .expect("bootstrap_master should succeed");
+
+        let pid = PlayerId::new(TEST_STEAM_ID);
+        upsert_player_inner(&client, pid, "Player")
+            .await
+            .expect("insert should succeed");
+
+        // Out-of-band admin flag set (e.g. by an admin tool); the next upsert
+        // must NOT clobber it back to false.
+        client
+            .execute(
+                "UPDATE skua_master.player_info
+                 SET is_admin = TRUE, is_banned = TRUE
+                 WHERE steam_id = $1",
+                &[&pid],
+            )
+            .await
+            .expect("admin flag update should succeed");
+
+        let info = upsert_player_inner(&client, pid, "Player")
+            .await
+            .expect("second upsert should succeed");
+
+        assert!(
+            info.is_admin,
+            "is_admin must survive upsert; only name and last_seen are touched"
+        );
+        assert!(
+            info.is_banned,
+            "is_banned must survive upsert; only name and last_seen are touched"
+        );
     }
 
     #[tokio::test]

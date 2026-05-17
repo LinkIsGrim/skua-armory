@@ -34,6 +34,10 @@ GVAR(list) = fromJSON _return; // Store certs in global variable
 } forEach GVAR(list);
 INFO("Certification list updated successfully.");
 
+if (!GVAR(loaded)) then {
+    [QGVAR(loaded)] call CBA_fnc_globalEventJIP;
+};
+
 if (GVAR(loaded)) exitWith {}; // If certs already loaded, no need to run post-load code again
 
 GVAR(loaded) = true;

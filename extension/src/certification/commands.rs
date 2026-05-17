@@ -25,9 +25,9 @@ use crate::error::{QueryError, QueryOutcome, QueryState, transient_query_error};
 /// JSON payload for `grant` and `load_player` callbacks. Field names match
 /// what `addons/certifications/functions/fnc_onGrantReturn.sqf` reads.
 #[derive(Serialize)]
-struct PlayerCertEvent<'a> {
-    player_id: PlayerId,
-    cert_id: &'a str,
+pub(super) struct PlayerCertEvent<'a> {
+    pub(super) player_id: PlayerId,
+    pub(super) cert_id: &'a str,
 }
 
 pub fn group() -> Group {
