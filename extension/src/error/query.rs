@@ -72,17 +72,17 @@ pub struct QueryResult {
 }
 
 impl QueryResult {
-    #[must_use] 
+    #[must_use]
     pub fn new(state: QueryState) -> Self {
         Self { state, error: None }
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn done() -> Self {
         Self::new(QueryState::Done)
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn processing() -> Self {
         Self::new(QueryState::Processing)
     }

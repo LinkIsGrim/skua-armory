@@ -369,10 +369,7 @@ mod integration_tests {
             .await
             .expect("Schema query failed")
             .get(0);
-        assert!(
-            schema_exists,
-            "Campaign schema {schema_name} should exist"
-        );
+        assert!(schema_exists, "Campaign schema {schema_name} should exist");
 
         let expected_tables = ["player_data", "player_world_data", "world_data"];
         for table in expected_tables {

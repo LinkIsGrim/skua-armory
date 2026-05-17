@@ -16,9 +16,7 @@ mod types_arma {
         };
         let arma = cert.to_arma();
         let Value::Array(items) = arma else {
-            panic!(
-                "Certification should serialize as Value::Array, got {arma:?}"
-            );
+            panic!("Certification should serialize as Value::Array, got {arma:?}");
         };
         assert_eq!(items.len(), 5, "expected 5 fields in IntoArma output");
         for (i, expected) in [

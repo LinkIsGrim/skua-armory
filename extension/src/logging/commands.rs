@@ -31,7 +31,8 @@ pub fn set_level(level: String) -> Result<String, String> {
 
 pub fn get_level() -> String {
     LOG_LEVEL
-        .read().map_or_else(|_| "INFO".to_string(), |level| level.to_string())
+        .read()
+        .map_or_else(|_| "INFO".to_string(), |level| level.to_string())
 }
 
 pub fn group() -> Group {

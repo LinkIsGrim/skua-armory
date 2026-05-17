@@ -89,7 +89,10 @@ impl Database {
 /// # Errors
 /// Returns a `tokio_postgres::Error` if the database configuration is invalid.
 pub async fn get_db() -> Result<&'static Database, tokio_postgres::Error> {
-    match DATABASE.get_or_try_init(|| async { Ok(Database::init_from_env()) }).await {
+    match DATABASE
+        .get_or_try_init(|| async { Ok(Database::init_from_env()) })
+        .await
+    {
         Ok(db) => Ok(db),
         Err(e) => {
             INIT_STATE.store(DatabaseState::Failed);
