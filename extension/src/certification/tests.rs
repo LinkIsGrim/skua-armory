@@ -1,45 +1,79 @@
 //! Certification tests — unit + integration (testcontainers Postgres).
 
 #[cfg(test)]
-mod types_arma {
+mod wire_format {
     use super::super::types::Certification;
-    use arma_rs::{IntoArma, Value};
 
-    #[test]
-    fn into_arma_emits_struct_map_fields() {
-        let cert = Certification {
+    fn sample() -> Certification {
+        Certification {
             id: "pilot".into(),
             display_name: "Pilot".into(),
             document: "https://docs.example/pilot".into(),
             grant_event: "skua_cert_pilot".into(),
             revoke_event: "skua_cert_revoke_pilot".into(),
-        };
-        let arma = cert.to_arma();
-        let Value::Array(items) = arma else {
-            panic!("Certification should serialize as Value::Array, got {arma:?}");
-        };
-        assert_eq!(items.len(), 5, "expected 5 fields in IntoArma output");
+        }
+    }
 
-        let expected = [
-            ("id", Value::String("pilot".into())),
-            ("display_name", Value::String("Pilot".into())),
-            (
-                "document",
-                Value::String("https://docs.example/pilot".into()),
-            ),
-            ("grant_event", Value::String("skua_cert_pilot".into())),
-            (
-                "revoke_event",
-                Value::String("skua_cert_revoke_pilot".into()),
-            ),
-        ];
+    /// `run_list` serializes `Vec<Certification>` to JSON; SQF parses with
+    /// `fromJSON`. Lock the field names + shape so a struct rename can't
+    /// silently break SQF callers (the SQF side reads `certID`, not `id`).
+    #[test]
+    fn list_payload_is_json_array_of_objects() {
+        let json = serde_json::to_string(&vec![sample()]).expect("serialize");
+        let parsed: serde_json::Value = serde_json::from_str(&json).expect("parse back");
 
-        for (key, value) in expected {
+        let arr = parsed.as_array().expect("top-level array");
+        assert_eq!(arr.len(), 1);
+        let obj = arr[0].as_object().expect("element is JSON object");
+
+        for field in [
+            "id",
+            "display_name",
+            "document",
+            "grant_event",
+            "revoke_event",
+        ] {
             assert!(
-                items.contains(&Value::Array(vec![Value::String(key.into()), value])),
-                "missing field {key} in IntoArma output: {items:?}"
+                obj.contains_key(field),
+                "expected JSON object to contain field {field}, got {obj:?}"
             );
         }
+        assert_eq!(obj["id"], "pilot");
+        assert_eq!(obj["display_name"], "Pilot");
+        assert_eq!(obj["grant_event"], "skua_cert_pilot");
+        assert_eq!(obj["revoke_event"], "skua_cert_revoke_pilot");
+    }
+
+    /// `grant` / `load_player` callbacks ship a `{playerID, id}` JSON
+    /// object consumed by `fnc_onGrantReturn`. Lock the key names + types
+    /// (player_id must be a string so `BIS_fnc_getUnitByUID` is happy).
+    #[test]
+    fn grant_event_payload_shape() {
+        use crate::domain::PlayerId;
+
+        #[derive(serde::Serialize)]
+        struct Event<'a> {
+            #[serde(rename = "playerID")]
+            player_id: PlayerId,
+            #[serde(rename = "id")]
+            id: &'a str,
+        }
+
+        let json = serde_json::to_string(&Event {
+            player_id: PlayerId::new(76_561_198_000_000_000),
+            id: "pilot",
+        })
+        .expect("serialize");
+        let parsed: serde_json::Value = serde_json::from_str(&json).expect("parse back");
+        let obj = parsed.as_object().expect("object");
+
+        assert_eq!(obj.len(), 2, "exactly two fields expected");
+        assert_eq!(obj["playerID"], "76561198000000000");
+        assert!(
+            obj["playerID"].is_string(),
+            "playerID must serialize as a JSON string for BIS_fnc_getUnitByUID"
+        );
+        assert_eq!(obj["id"], "pilot");
     }
 }
 

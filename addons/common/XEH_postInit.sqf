@@ -24,3 +24,7 @@ GVAR(camoCoefMap) = createHashMap;
 
     _unit setUnitTrait ["camouflageCoef", _camoCoef];
 }] call CBA_fnc_addClassEventHandler;
+
+["CBA_settingsInitialized", {
+    call FUNC(setLogLevelFromSettings);
+}] call CBA_fnc_addEventHandler;

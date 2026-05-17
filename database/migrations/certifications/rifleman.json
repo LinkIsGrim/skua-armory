@@ -1,0 +1,9 @@
+{
+    "display_name": "Rifleman",
+    "document": "https://docs.skua.international/certs/rifleman",
+    "description": "Baseline infantry training and combat experience. Basic knowledge of modded Arma 3 and Skua in general.",
+    "perk": "Access to the shop with basic equipment and weapons. Access to other certifications.",
+    "pay_bonus": 2000,
+    "grant_event": "skua_cert_rifleman",
+    "revoke_event": "skua_cert_revoke_rifleman"
+}

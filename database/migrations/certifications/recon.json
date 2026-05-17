@@ -1,0 +1,9 @@
+{
+    "display_name": "Recon",
+    "document": "https://docs.skua.international/certs/recon",
+    "description": "Reconnaissance and surveillance skills. Advanced knowledge of terrain and enemy positions. Land navigation and stealth.",
+    "perk": "Access to ghillie suits. Cheaper ATAK and binoculars.",
+    "pay_bonus": 100,
+    "grant_event": "skua_cert_recon",
+    "revoke_event": "skua_cert_revoke_recon"
+}

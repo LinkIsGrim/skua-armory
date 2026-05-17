@@ -1,0 +1,9 @@
+{
+    "display_name": "SERE",
+    "document": "https://docs.skua.international/certs/sere",
+    "description": "Proven Survival, Evasion, Resistance, and Escape skills. This cannot be taught, only tested for.",
+    "perk": "Bragging rights and a pay bonus.",
+    "pay_bonus": 100,
+    "grant_event": "skua_cert_sere",
+    "revoke_event": "skua_cert_revoke_sere"
+}

@@ -1,7 +1,7 @@
 //! Arma-callable commands for log level management.
 
 use arma_rs::Group;
-use tracing::Level;
+use tracing::{Level, debug, error, info, trace, warn};
 
 use super::LOG_LEVEL;
 
@@ -20,13 +20,25 @@ pub fn set_level(level: String) -> Result<String, String> {
         other => return Err(format!("unknown log level: {other}")),
     };
 
+    info!("Setting log level to {new_level}");
+
     match LOG_LEVEL.write() {
         Ok(mut current) => {
             *current = new_level;
-            Ok(get_level())
+            drop(current);
         }
-        Err(_) => Err("LOG_LEVEL lock poisoned".into()),
+        Err(_) => return Err("LOG_LEVEL lock poisoned".into()),
     }
+
+    match new_level {
+        Level::ERROR => error!("log filter test message"),
+        Level::WARN => warn!("log filter test message"),
+        Level::INFO => info!("log filter test message"),
+        Level::DEBUG => debug!("log filter test message"),
+        Level::TRACE => trace!("log filter test message"),
+    }
+
+    Ok(get_level())
 }
 
 pub fn get_level() -> String {

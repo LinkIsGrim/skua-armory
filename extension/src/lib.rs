@@ -20,6 +20,9 @@ pub mod ranks;
 
 pub use domain::PlayerId;
 
+#[cfg(test)]
+mod enum_sync;
+
 #[arma]
 fn init() -> Extension {
     let ext = Extension::build()

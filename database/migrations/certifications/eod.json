@@ -1,0 +1,9 @@
+{
+    "display_name": "EOD Specialist",
+    "document": "https://docs.skua.international/certs/eod",
+    "description": "Explosive Ordnance Disposal and Demolitions.",
+    "perk": "Access to EOD equipment. Cheaper explosives and demolition supplies.",
+    "pay_bonus": 200,
+    "grant_event": "skua_cert_eod",
+    "revoke_event": "skua_cert_revoke_eod"
+}

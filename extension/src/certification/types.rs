@@ -1,10 +1,9 @@
 //! Certification value types.
 
-use arma_rs::IntoArma;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 /// Row shape returned by `certification:list`.
-#[derive(Debug, Clone, PartialEq, Eq, IntoArma)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Certification {
     pub id: String,
     pub display_name: String,

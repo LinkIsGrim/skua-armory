@@ -1,0 +1,8 @@
+{
+    "display_name": "Anti-Tank",
+    "document": "https://docs.skua.international/certs/anti_tank",
+    "perk": "Ability to purchase Heavy AT weapons and ammo at their own discretion.",
+    "pay_bonus": 100,
+    "grant_event": "skua_cert_anti_tank",
+    "revoke_event": "skua_cert_revoke_anti_tank"
+}

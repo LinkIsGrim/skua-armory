@@ -13,10 +13,10 @@ Mod builds (run from repo root):
 - `hemtt build` — full build, output in `.hemttout/build/`. This is what CI runs on every push/PR.
 - `hemtt release` — release build for Steam Workshop upload (triggered by `v*.*.*` tags).
 
-Extension (Rust, in `extension/`):
-- Linux dedicated server: `cd extension && cargo build --release` → produces `target/x86_64-unknown-linux-gnu/release/libskua.so`.
-- Windows: `cd extension && cargo xwin build --release --target x86_64-pc-windows-msvc` (needs `cargo install xwin --locked` and `rustup target add x86_64-pc-windows-msvc` once).
-- Convenience: `extension/install_deps.sh` then `extension/build.sh`.
+Extension (Rust, in `extension/`, part of the cargo workspace at the repo root):
+- Linux dedicated server: `cargo build --release` → produces `target/release/libskua.so` (at repo root, since `Cargo.toml` workspace puts `target/` there).
+- Windows: `cargo xwin build --release --target x86_64-pc-windows-msvc` (needs `cargo install xwin --locked` and `rustup target add x86_64-pc-windows-msvc` once).
+- Convenience: `extension/install_deps.sh` then `extension/build.sh` (uses `cross` for Linux to keep glibc compat).
 - After building, move the artifact to repo root as `skua_x64.dll` / `skua_x64.so` (the `_x64` suffix is required by Arma's extension loader).
 - Tests: `cd extension && cargo test`. Integration tests (`src/database/tests.rs`) spin up Postgres via `testcontainers`, so they require Docker / Podman to be running. Unit tests (`sanitize_key`, the SQF↔Rust enum sync check) have no external dependencies.
 
