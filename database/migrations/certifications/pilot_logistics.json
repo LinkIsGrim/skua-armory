@@ -1,0 +1,13 @@
+{
+  "display_name": "Pilot (Logistics)",
+  "document": "https://docs.skua.international/certs/pilot_logistics",
+  "description": "Proven ability to pilot rotary-wing aircraft for logistics and transport, including sling-loading and cargo drops. This cannot be taught, only tested for.",
+  "perk": "Access to pilot suits and ability to purchase non-combat helicopters at their own discretion.",
+  "pay_bonus": 200,
+  "grant_event": "skua_cert_pilot_logistics",
+  "revoke_event": "skua_cert_revoke_pilot_logistics",
+  "requires": [
+    "rifleman",
+    "rto"
+  ]
+}

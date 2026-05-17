@@ -12,12 +12,6 @@ GVAR(key) = "prod"; // Add setting
 
 if (isServer) then {
     GVAR(saveAllObjects) = false; // save objects even if they weren't marked for saving
-    addMissionEventHandler ["ExtensionCallback", {
-        params ["_name", "_function", "_data"];
-        if (_name != "skua:database") exitWith {};
-
-        systemChat format ["extensionCallback: %1: %2", _function, _data];
-    }];
 };
 
 

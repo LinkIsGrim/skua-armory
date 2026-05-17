@@ -1,0 +1,12 @@
+{
+    "display_name": "Marksman",
+    "document": "https://docs.skua.international/certs/marksman",
+    "description": "Advanced marksmanship and precision shooting.",
+    "perk": "Access to marksman rifles, higher-tier optics, and long-range ammunition.",
+    "pay_bonus": 100,
+    "grant_event": "skua_cert_marksman",
+    "revoke_event": "skua_cert_revoke_marksman",
+    "requires": [
+        "rifleman"
+    ]
+}

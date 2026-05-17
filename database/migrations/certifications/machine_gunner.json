@@ -1,0 +1,12 @@
+{
+    "display_name": "Machine Gunner",
+    "document": "https://docs.skua.international/certs/machine_gunner",
+    "description": "Advanced training in the use of machine guns and heavy weapons, including crew-served weapons.",
+    "perk": "Access to medium, heavy, and non-standard machine guns and heavy weapons. Heavy discount on belts and boxes of ammunition.",
+    "pay_bonus": 100,
+    "grant_event": "skua_cert_machine_gunner",
+    "revoke_event": "skua_cert_revoke_machine_gunner",
+    "requires": [
+        "rifleman"
+    ]
+}

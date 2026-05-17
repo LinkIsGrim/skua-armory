@@ -1,0 +1,14 @@
+{
+    "display_name": "Sniper",
+    "document": "https://docs.skua.international/certs/sniper",
+    "description": "Advanced sniper training and precision shooting.",
+    "perk": "Access to sniper rifles. Discount on higher-tier optics and long-range ammunition.",
+    "pay_bonus": 500,
+    "grant_event": "skua_cert_sniper",
+    "revoke_event": "skua_cert_revoke_sniper",
+    "requires": [
+        "rifleman",
+        "recon",
+        "marksman"
+    ]
+}

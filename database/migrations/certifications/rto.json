@@ -1,0 +1,12 @@
+{
+    "display_name": "RTO",
+    "document": "https://docs.skua.international/certs/rto",
+    "description": "Radio operation and communication skills. Coordination of infantry assets at a platoon level. Coordination of artillery and air support.",
+    "perk": "Much cheaper radios, laser designators, and batteries.",
+    "pay_bonus": 100,
+    "grant_event": "skua_cert_rto",
+    "revoke_event": "skua_cert_revoke_rto",
+    "requires": [
+        "rifleman"
+    ]
+}

@@ -72,6 +72,17 @@ impl IntoArma for PlayerId {
     }
 }
 
+impl serde::Serialize for PlayerId {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        // Emit as JSON string (matches IntoArma; Steam IDs exceed JS safe-int
+        // range, so consumers must treat them as strings anyway).
+        serializer.collect_str(&self.0)
+    }
+}
+
 impl ToSql for PlayerId {
     fn to_sql(
         &self,

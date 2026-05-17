@@ -1,0 +1,12 @@
+{
+    "display_name": "Mechanic",
+    "document": "https://docs.skua.international/certs/mechanic",
+    "description": "RRR (Repair, Refuel, Reload) using baseline ACE as well as Advanced Repair.",
+    "perk": "Permanent ACE Engineer (repair access). Cheaper fuel and ammo.",
+    "pay_bonus": 300,
+    "grant_event": "skua_cert_mechanic",
+    "revoke_event": "skua_cert_revoke_mechanic",
+    "requires": [
+        "rifleman"
+    ]
+}

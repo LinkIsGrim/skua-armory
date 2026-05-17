@@ -1,6 +1,12 @@
 {
     "display_name": "Medic",
     "document": "https://docs.skua.international/certs/medic",
+    "description": "Taught knowledge of ACE Medical. Can treat themselves and others effectively in combat.",
+    "perk": "Permanent ACE Medic. Slight discount on medical supplies.",
+    "pay_bonus": 200,
     "grant_event": "skua_cert_medic",
-    "revoke_event": "skua_cert_revoke_medic"
+    "revoke_event": "skua_cert_revoke_medic",
+    "requires": [
+        "rifleman"
+    ]
 }

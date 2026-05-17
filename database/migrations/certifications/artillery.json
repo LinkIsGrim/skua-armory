@@ -1,0 +1,12 @@
+{
+    "display_name": "Artillery",
+    "document": "https://docs.skua.international/certs/artillery",
+    "description": "Taught knowledge of artillery and its use, as well as how to coordinate its deployment with RTOs in the field.",
+    "perk": "Ability to purchase artillery weaponry and vehicles at their own discretion, from 60mm mortars to 155mm howitzers.",
+    "pay_bonus": 100,
+    "grant_event": "skua_cert_artillery",
+    "revoke_event": "skua_cert_revoke_artillery",
+    "requires": [
+        "rifleman"
+    ]
+}

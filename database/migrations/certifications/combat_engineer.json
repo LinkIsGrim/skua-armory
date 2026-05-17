@@ -1,0 +1,17 @@
+{
+    "display_name": "Combat Engineer",
+    "document": "https://docs.skua.international/certs/combat_engineer",
+    "description": "Construction, EOD & Demolitions, logistics, crew-served weaponry, and vehicle maintenance.",
+    "perk": "Consolidation of prior certifications. Cheaper repair parts. Ability to purchase engineering vehicles at their own discretion. Can buy bulk ammunition and supplies.",
+    "perk_antistasi": "Can take Commander slot.",
+    "perk_liberation": "Can take Commander slot.",
+    "pay_bonus": 500,
+    "grant_event": "skua_cert_combat_engineer",
+    "revoke_event": "skua_cert_revoke_combat_engineer",
+    "requires": [
+        "rifleman",
+        "mechanic",
+        "eod",
+        "pilot_logistics"
+    ]
+}

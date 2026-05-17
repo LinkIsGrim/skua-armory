@@ -14,5 +14,8 @@
  */
 
 if (isDedicated) exitWith {};
+// Singleplayer's getPlayerUID returns "_SP_PLAYER_"; no point notifying since
+// the database/persistence chain skips bootstrap in SP anyway.
+if (!isMultiplayer) exitWith {};
 
 [{[QGVAR(clientConnected), [getPlayerUID player, hasInterface, player]] call CBA_fnc_serverEvent}] call CBA_fnc_execNextFrame;
