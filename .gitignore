@@ -8,3 +8,4 @@ releases
 .hemttprivatekey
 target
 *.zip
+.claude
