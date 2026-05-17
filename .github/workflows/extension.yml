@@ -19,13 +19,23 @@ jobs:
 
     - name: Setup Rust
       uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
 
     - name: Cache cargo
       uses: Swatinem/rust-cache@v2
       with:
         workspaces: extension
 
+    - name: cargo fmt
+      working-directory: extension
+      run: cargo fmt --all -- --check
+
+    - name: cargo clippy
+      working-directory: extension
+      run: cargo clippy --locked --all-targets -- -D warnings
+
     # ubuntu-latest has Docker pre-installed; testcontainers picks it up.
-    - name: Run cargo test
+    - name: cargo test
       working-directory: extension
       run: cargo test --locked
