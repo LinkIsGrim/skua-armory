@@ -6,21 +6,25 @@ use tracing::Level;
 use super::LOG_LEVEL;
 
 /// Set the log level dynamically. Valid levels: ERROR, WARN, INFO, DEBUG, TRACE.
-pub fn set_level(level: String) -> String {
+///
+/// Returns the new level on success, or an error message describing why the
+/// request was rejected (unknown level, poisoned lock).
+pub fn set_level(level: String) -> Result<String, String> {
     let new_level = match level.to_uppercase().as_str() {
         "ERROR" => Level::ERROR,
         "WARN" => Level::WARN,
         "INFO" => Level::INFO,
         "DEBUG" => Level::DEBUG,
         "TRACE" => Level::TRACE,
-        _ => return String::new(),
+        other => return Err(format!("unknown log level: {}", other)),
     };
 
-    if let Ok(mut current) = LOG_LEVEL.write() {
-        *current = new_level;
-        get_level()
-    } else {
-        String::new()
+    match LOG_LEVEL.write() {
+        Ok(mut current) => {
+            *current = new_level;
+            Ok(get_level())
+        }
+        Err(_) => Err("LOG_LEVEL lock poisoned".into()),
     }
 }
 

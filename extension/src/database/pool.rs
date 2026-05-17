@@ -4,13 +4,19 @@ use deadpool_postgres::{Manager, Pool};
 use std::env;
 use tokio::sync::OnceCell;
 use tokio_postgres::{Config, NoTls};
-use tracing::info;
+use tracing::debug;
 
 use super::state::{AtomicDatabaseState, DatabaseState};
 use crate::error::DbError;
 
 /// Global lazy-initialized database instance.
 static DATABASE: OnceCell<Database> = OnceCell::const_new();
+
+/// Pre-init state observable before `DATABASE` is populated. Set to `Failed`
+/// when `init_from_env` errors so [`get_state`] can report a terminal failure
+/// even though `OnceCell` itself stays empty (and will retry on the next call).
+pub(super) static INIT_STATE: AtomicDatabaseState =
+    AtomicDatabaseState::new(DatabaseState::AwaitConnect);
 
 pub struct Database {
     pool: Pool,
@@ -22,16 +28,16 @@ impl Database {
         let mut cfg = Config::new();
 
         // 127.0.0.1 not "localhost": Proton may not resolve localhost.
-        cfg.host(&env::var("DATABASE_HOST").unwrap_or_else(|_| "127.0.0.1".into()));
+        cfg.host(env::var("DATABASE_HOST").unwrap_or_else(|_| "127.0.0.1".into()));
         cfg.port(
             env::var("DATABASE_PORT")
                 .ok()
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(55432),
         );
-        cfg.user(&env::var("DATABASE_USER").unwrap_or_else(|_| "postgres".into()));
-        cfg.password(&env::var("DATABASE_PASSWORD").unwrap_or_else(|_| "changeit".into()));
-        cfg.dbname(&env::var("DATABASE_NAME").unwrap_or_else(|_| "postgres".into()));
+        cfg.user(env::var("DATABASE_USER").unwrap_or_else(|_| "postgres".into()));
+        cfg.password(env::var("DATABASE_PASSWORD").unwrap_or_else(|_| "changeit".into()));
+        cfg.dbname(env::var("DATABASE_NAME").unwrap_or_else(|_| "postgres".into()));
 
         let pool_size = env::var("DATABASE_POOL_SIZE")
             .ok()
@@ -75,7 +81,13 @@ impl Database {
 }
 
 pub async fn get_db() -> Result<&'static Database, tokio_postgres::Error> {
-    DATABASE.get_or_try_init(Database::init_from_env).await
+    match DATABASE.get_or_try_init(Database::init_from_env).await {
+        Ok(db) => Ok(db),
+        Err(e) => {
+            INIT_STATE.store(DatabaseState::Failed);
+            Err(e)
+        }
+    }
 }
 
 pub async fn get_client() -> Result<deadpool_postgres::Client, DbError> {
@@ -84,16 +96,15 @@ pub async fn get_client() -> Result<deadpool_postgres::Client, DbError> {
 }
 
 pub fn get_state() -> DatabaseState {
-    DATABASE
-        .get()
-        .map(|db| db.state())
-        .unwrap_or(DatabaseState::AwaitConnect)
+    match DATABASE.get() {
+        Some(db) => db.state(),
+        None => INIT_STATE.load(),
+    }
 }
 
 /// Arma-callable: returns the current database state.
 pub fn get_database_state() -> DatabaseState {
-    info!("Database state requested");
     let state = get_state();
-    info!(?state, "Database state returned");
+    debug!(?state, "database state requested");
     state
 }

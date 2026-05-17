@@ -60,8 +60,22 @@ where
 struct MessageVisitor<'a>(&'a mut String);
 
 impl<'a> tracing::field::Visit for MessageVisitor<'a> {
+    fn record_str(&mut self, field: &tracing::field::Field, value: &str) {
+        if field.name() == "message" {
+            *self.0 = value.to_string();
+        } else {
+            if !self.0.is_empty() {
+                self.0.push_str(", ");
+            }
+            self.0.push_str(&format!("{} = {}", field.name(), value));
+        }
+    }
+
     fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn std::fmt::Debug) {
         if field.name() == "message" {
+            // `record_str` already handles plain string messages; this arm
+            // covers non-string `tracing::field::display`/`debug` values used
+            // as the message.
             *self.0 = format!("{:?}", value);
         } else {
             if !self.0.is_empty() {
