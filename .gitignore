@@ -9,3 +9,5 @@ releases
 target
 *.zip
 .claude
+*.dll
+*.so
