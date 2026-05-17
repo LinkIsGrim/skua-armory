@@ -448,3 +448,109 @@ mod integration_tests {
         }
     }
 }
+
+/// Live database tests against a running Postgres (e.g. via compose.yaml).
+///
+/// These are `#[ignore]` by default so they don't block CI, but you can run them
+/// when you have a live database:
+///
+/// ```sh
+/// # Terminal 1: Start the database
+/// cd database && docker compose up -d
+///
+/// # Terminal 2: Run the live tests
+/// cargo test --lib database::tests::live_db -- --ignored --nocapture
+/// ```
+///
+/// Environment variables (optional):
+/// - `DATABASE_HOST` (default: 127.0.0.1)
+/// - `DATABASE_PORT` (default: 55432)
+/// - `DATABASE_USER` (default: postgres)
+/// - `DATABASE_PASSWORD` (default: changeit)
+/// - `DATABASE_NAME` (default: postgres)
+#[cfg(test)]
+mod live_db {
+    use std::env;
+
+    use deadpool_postgres::{Manager, Pool};
+    use tokio_postgres::Config;
+    use tokio_postgres::NoTls;
+
+    use super::super::schema::{bootstrap_campaign, bootstrap_master};
+
+    fn create_live_pool() -> Result<Pool, Box<dyn std::error::Error>> {
+        let host = env::var("DATABASE_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+        let port = env::var("DATABASE_PORT")
+            .ok()
+            .and_then(|p| p.parse::<u16>().ok())
+            .unwrap_or(55432);
+        let user = env::var("DATABASE_USER").unwrap_or_else(|_| "postgres".to_string());
+        let password = env::var("DATABASE_PASSWORD").unwrap_or_else(|_| "changeit".to_string());
+        let dbname = env::var("DATABASE_NAME").unwrap_or_else(|_| "postgres".to_string());
+
+        println!(
+            "Connecting to live database: {}@{}:{}/{}",
+            user, host, port, dbname
+        );
+
+        let mut cfg = Config::new();
+        cfg.host(&host)
+            .port(port)
+            .user(&user)
+            .password(&password)
+            .dbname(&dbname);
+
+        let mgr = Manager::new(cfg, NoTls);
+        let pool = Pool::builder(mgr).build()?;
+        Ok(pool)
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn bootstrap_master_on_live_db() {
+        let pool = create_live_pool().expect("Failed to create pool");
+        let client = pool
+            .get()
+            .await
+            .expect("Failed to get connection from live database");
+
+        println!("Testing bootstrap_master on live database...");
+        match bootstrap_master(&client).await {
+            Ok(()) => {
+                println!("✓ bootstrap_master succeeded!");
+            }
+            Err(e) => {
+                eprintln!("✗ bootstrap_master failed: {:?}", e);
+                panic!("bootstrap_master failed: {:?}", e);
+            }
+        }
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn bootstrap_campaign_on_live_db() {
+        let pool = create_live_pool().expect("Failed to create pool");
+        let client = pool
+            .get()
+            .await
+            .expect("Failed to get connection from live database");
+
+        // First bootstrap master
+        println!("Pre-requisite: bootstrap_master...");
+        bootstrap_master(&client)
+            .await
+            .expect("bootstrap_master must succeed first");
+
+        // Now test campaign bootstrap
+        println!("Testing bootstrap_campaign on live database...");
+        match bootstrap_campaign(&client, "test_campaign_live").await {
+            Ok(()) => {
+                println!("✓ bootstrap_campaign succeeded!");
+            }
+            Err(e) => {
+                eprintln!("✗ bootstrap_campaign failed: {:?}", e);
+                panic!("bootstrap_campaign failed: {:?}", e);
+            }
+        }
+    }
+}
