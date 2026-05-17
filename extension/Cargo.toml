@@ -5,11 +5,17 @@ edition = "2024"
 
 [lib]
 name = "skua"
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 arma-rs = { version = "1.12.1", features = ["uuid"] }
 uuid = { version = "1.19.0", features = ["v7"] }
-deadpool-postgres = { version = "0.14.1"}
+deadpool-postgres = { version = "0.14.1" }
 tokio-postgres = { version = "0.7.15" }
-tokio = { version = "1.49.0", features = ["full"] }
+tokio = { version = "1.49.0", features = ["rt-multi-thread", "macros", "sync", "time", "net", "io-util"] }
+regex = "1.12.2"
+tracing = "0.1.44"
+tracing-subscriber = "0.3.22"
+
+[dev-dependencies]
+testcontainers-modules = { version = "0.14", features = ["postgres"] }
