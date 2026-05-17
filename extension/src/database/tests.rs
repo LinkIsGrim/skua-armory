@@ -489,8 +489,7 @@ mod live_db {
         let dbname = env::var("DATABASE_NAME").unwrap_or_else(|_| "postgres".to_string());
 
         println!(
-            "Connecting to live database: {}@{}:{}/{}",
-            user, host, port, dbname
+            "Connecting to live database: {user}@{host}:{port}/{dbname}"
         );
 
         let mut cfg = Config::new();
@@ -506,7 +505,7 @@ mod live_db {
     }
 
     #[tokio::test]
-    #[ignore]
+    #[ignore = "Requires a live database; see module docs for instructions"]
     async fn bootstrap_master_on_live_db() {
         let pool = create_live_pool().expect("Failed to create pool");
         let client = pool
@@ -520,14 +519,14 @@ mod live_db {
                 println!("✓ bootstrap_master succeeded!");
             }
             Err(e) => {
-                eprintln!("✗ bootstrap_master failed: {:?}", e);
-                panic!("bootstrap_master failed: {:?}", e);
+                eprintln!("✗ bootstrap_master failed: {e:?}");
+                panic!("bootstrap_master failed: {e:?}");
             }
         }
     }
 
     #[tokio::test]
-    #[ignore]
+    #[ignore = "Requires a live database; see module docs for instructions"]
     async fn bootstrap_campaign_on_live_db() {
         let pool = create_live_pool().expect("Failed to create pool");
         let client = pool
@@ -548,8 +547,8 @@ mod live_db {
                 println!("✓ bootstrap_campaign succeeded!");
             }
             Err(e) => {
-                eprintln!("✗ bootstrap_campaign failed: {:?}", e);
-                panic!("bootstrap_campaign failed: {:?}", e);
+                eprintln!("✗ bootstrap_campaign failed: {e:?}");
+                panic!("bootstrap_campaign failed: {e:?}");
             }
         }
     }
