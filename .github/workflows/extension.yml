@@ -11,7 +11,7 @@ on:
     - '.github/workflows/extension.yml'
 
 jobs:
-  test:
+  format:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
@@ -20,7 +20,7 @@ jobs:
     - name: Setup Rust
       uses: dtolnay/rust-toolchain@stable
       with:
-        components: rustfmt, clippy
+        components: rustfmt
 
     - name: Cache cargo
       uses: Swatinem/rust-cache@v2
@@ -31,9 +31,39 @@ jobs:
       working-directory: extension
       run: cargo fmt --all -- --check
 
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy
+
+    - name: Cache cargo
+      uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: extension
+
     - name: cargo clippy
       working-directory: extension
-      run: cargo clippy --locked --all-targets -- -D warnings
+      run: cargo clippy --locked --all-targets -- -D warnings -W clippy::pedantic
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Cache cargo
+      uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: extension
 
     # ubuntu-latest has Docker pre-installed; testcontainers picks it up.
     - name: cargo test

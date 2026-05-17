@@ -2,7 +2,7 @@
 //!
 //! Integration tests exercise the bootstrap logic against a real Postgres
 //! instance via testcontainers, so they require Docker. Unit tests (sync
-//! check, sanitize_key, parse_campaign_arg, arma roundtrip) have no external
+//! check, `sanitize_key`, `parse_campaign_arg`, and arma roundtrip tests have no external
 //! dependencies.
 
 #[cfg(test)]
@@ -73,6 +73,8 @@ mod arma_roundtrip {
 /// edit both at once.
 #[cfg(test)]
 mod enum_sync {
+    use std::fmt::Write;
+
     use super::super::state::DatabaseState;
 
     /// Source of truth: must contain every `DatabaseState` variant.
@@ -90,12 +92,13 @@ mod enum_sync {
         out.push_str("// these MUST match the Rust extension's DatabaseState enum (see extension/src/database/state.rs)\n");
         let width = VARIANTS.iter().map(|(n, _)| n.len()).max().unwrap_or(0);
         for (name, state) in VARIANTS {
-            out.push_str(&format!(
-                "#define DATABASESTATE_{name:<width$} (\"{value}\")\n",
+            let _ = writeln!(
+                out,
+                "#define DATABASESTATE_{name:<width$} (\"{value}\")",
                 name = name,
                 width = width,
                 value = *state as u8,
-            ));
+            );
         }
         out
     }
@@ -141,7 +144,7 @@ mod integration_tests {
 
     use super::super::schema::{bootstrap_campaign, bootstrap_master, sanitize_key};
 
-    async fn create_test_pool(host: &str, port: u16) -> Pool {
+    fn create_test_pool(host: &str, port: u16) -> Pool {
         let mut cfg = Config::new();
         cfg.host(host);
         cfg.port(port);
@@ -175,30 +178,30 @@ mod integration_tests {
             .await
             .expect("Failed to get port");
 
-        let pool = create_test_pool(&host.to_string(), port).await;
+        let pool = create_test_pool(&host.to_string(), port);
         (container, pool)
     }
 
-    const SCHEMA_EXISTS_QUERY: &str = r#"
+    const SCHEMA_EXISTS_QUERY: &str = r"
         SELECT EXISTS (
             SELECT 1 FROM information_schema.schemata
             WHERE schema_name = $1
         )
-    "#;
+    ";
 
-    const TABLE_EXISTS_QUERY: &str = r#"
+    const TABLE_EXISTS_QUERY: &str = r"
         SELECT EXISTS (
             SELECT 1 FROM information_schema.tables
             WHERE table_schema = $1 AND table_name = $2
         )
-    "#;
+    ";
 
-    const INDEX_EXISTS_QUERY: &str = r#"
+    const INDEX_EXISTS_QUERY: &str = r"
         SELECT EXISTS (
             SELECT 1 FROM pg_indexes
             WHERE schemaname = $1 AND indexname = $2
         )
-    "#;
+    ";
 
     // -------------------------------------------------------------------------
     // sanitize_key (pure)
@@ -254,15 +257,16 @@ mod integration_tests {
             "campaigns",
             "player_info",
             "player_certs",
+            "migration_state",
         ];
 
         for table in expected_tables {
             let exists: bool = client
                 .query_one(TABLE_EXISTS_QUERY, &[&"skua_master", &table])
                 .await
-                .unwrap_or_else(|e| panic!("Table query failed for {}: {}", table, e))
+                .unwrap_or_else(|e| panic!("Table query failed for {table}: {e}"))
                 .get(0);
-            assert!(exists, "Table {} should exist in skua_master", table);
+            assert!(exists, "Table {table} should exist in skua_master");
         }
 
         let expected_indexes = [
@@ -276,9 +280,51 @@ mod integration_tests {
             let exists: bool = client
                 .query_one(INDEX_EXISTS_QUERY, &[&schema, &index])
                 .await
-                .unwrap_or_else(|e| panic!("Index query failed for {}: {}", index, e))
+                .unwrap_or_else(|e| panic!("Index query failed for {index}: {e}"))
                 .get(0);
-            assert!(exists, "Index {} should exist in {}", index, schema);
+            assert!(exists, "Index {index} should exist in {schema}");
+        }
+
+        // Default rank seeded by bootstrap_schema (called by bootstrap_master).
+        let default_rank_name: String = client
+            .query_one(
+                "SELECT display_name FROM skua_master.ranks WHERE id = 0",
+                &[],
+            )
+            .await
+            .expect("default rank query failed")
+            .get(0);
+        assert_eq!(
+            default_rank_name, "Unranked",
+            "bootstrap should seed (0, 'Unranked')"
+        );
+
+        // The embedded pilot.json cert should be present after migration.
+        let pilot_exists: bool = client
+            .query_one(
+                "SELECT EXISTS(SELECT 1 FROM skua_master.certifications WHERE id = 'pilot')",
+                &[],
+            )
+            .await
+            .expect("pilot cert query failed")
+            .get(0);
+        assert!(
+            pilot_exists,
+            "embedded pilot.json should have been migrated in"
+        );
+
+        // migration_state should have rows for both entity types.
+        for entity in ["certification", "rank"] {
+            let bumped: bool = client
+                .query_one(
+                    "SELECT EXISTS(SELECT 1 FROM skua_master.migration_state
+                     WHERE entity_type = $1)",
+                    &[&entity],
+                )
+                .await
+                .expect("migration_state query failed")
+                .get(0);
+            assert!(bumped, "migration_state should have entry for {entity}");
         }
     }
 
@@ -323,20 +369,16 @@ mod integration_tests {
             .await
             .expect("Schema query failed")
             .get(0);
-        assert!(
-            schema_exists,
-            "Campaign schema {} should exist",
-            schema_name
-        );
+        assert!(schema_exists, "Campaign schema {schema_name} should exist");
 
         let expected_tables = ["player_data", "player_world_data", "world_data"];
         for table in expected_tables {
             let exists: bool = client
                 .query_one(TABLE_EXISTS_QUERY, &[&schema_name, &table])
                 .await
-                .unwrap_or_else(|e| panic!("Table query failed for {}: {}", table, e))
+                .unwrap_or_else(|e| panic!("Table query failed for {table}: {e}"))
                 .get(0);
-            assert!(exists, "Table {} should exist in {}", table, schema_name);
+            assert!(exists, "Table {table} should exist in {schema_name}");
         }
 
         let expected_indexes = ["idx_player_world_data_world", "idx_world_data_world"];
@@ -344,9 +386,9 @@ mod integration_tests {
             let exists: bool = client
                 .query_one(INDEX_EXISTS_QUERY, &[&schema_name, &index])
                 .await
-                .unwrap_or_else(|e| panic!("Index query failed for {}: {}", index, e))
+                .unwrap_or_else(|e| panic!("Index query failed for {index}: {e}"))
                 .get(0);
-            assert!(exists, "Index {} should exist in {}", index, schema_name);
+            assert!(exists, "Index {index} should exist in {schema_name}");
         }
 
         let registered: bool = client
@@ -392,17 +434,120 @@ mod integration_tests {
         for c in campaigns {
             bootstrap_campaign(&client, c)
                 .await
-                .unwrap_or_else(|e| panic!("bootstrap_campaign {} failed: {:?}", c, e));
+                .unwrap_or_else(|e| panic!("bootstrap_campaign {c} failed: {e:?}"));
         }
 
         for c in campaigns {
-            let schema = format!("skua_campaign_{}", c);
+            let schema = format!("skua_campaign_{c}");
             let exists: bool = client
                 .query_one(SCHEMA_EXISTS_QUERY, &[&schema])
                 .await
                 .expect("Query failed")
                 .get(0);
-            assert!(exists, "Campaign schema {} should exist", schema);
+            assert!(exists, "Campaign schema {schema} should exist");
+        }
+    }
+}
+
+/// Live database tests against a running Postgres (e.g. via compose.yaml).
+///
+/// These are `#[ignore]` by default so they don't block CI, but you can run them
+/// when you have a live database:
+///
+/// ```sh
+/// # Terminal 1: Start the database
+/// cd database && docker compose up -d
+///
+/// # Terminal 2: Run the live tests
+/// cargo test --lib database::tests::live_db -- --ignored --nocapture
+/// ```
+///
+/// Environment variables (optional):
+/// - `DATABASE_HOST` (default: 127.0.0.1)
+/// - `DATABASE_PORT` (default: 55432)
+/// - `DATABASE_USER` (default: postgres)
+/// - `DATABASE_PASSWORD` (default: changeit)
+/// - `DATABASE_NAME` (default: postgres)
+#[cfg(test)]
+mod live_db {
+    use std::env;
+
+    use deadpool_postgres::{Manager, Pool};
+    use tokio_postgres::Config;
+    use tokio_postgres::NoTls;
+
+    use super::super::schema::{bootstrap_campaign, bootstrap_master};
+
+    fn create_live_pool() -> Result<Pool, Box<dyn std::error::Error>> {
+        let host = env::var("DATABASE_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+        let port = env::var("DATABASE_PORT")
+            .ok()
+            .and_then(|p| p.parse::<u16>().ok())
+            .unwrap_or(55432);
+        let user = env::var("DATABASE_USER").unwrap_or_else(|_| "postgres".to_string());
+        let password = env::var("DATABASE_PASSWORD").unwrap_or_else(|_| "changeit".to_string());
+        let dbname = env::var("DATABASE_NAME").unwrap_or_else(|_| "postgres".to_string());
+
+        println!("Connecting to live database: {user}@{host}:{port}/{dbname}");
+
+        let mut cfg = Config::new();
+        cfg.host(&host)
+            .port(port)
+            .user(&user)
+            .password(&password)
+            .dbname(&dbname);
+
+        let mgr = Manager::new(cfg, NoTls);
+        let pool = Pool::builder(mgr).build()?;
+        Ok(pool)
+    }
+
+    #[tokio::test]
+    #[ignore = "Requires a live database; see module docs for instructions"]
+    async fn bootstrap_master_on_live_db() {
+        let pool = create_live_pool().expect("Failed to create pool");
+        let client = pool
+            .get()
+            .await
+            .expect("Failed to get connection from live database");
+
+        println!("Testing bootstrap_master on live database...");
+        match bootstrap_master(&client).await {
+            Ok(()) => {
+                println!("✓ bootstrap_master succeeded!");
+            }
+            Err(e) => {
+                eprintln!("✗ bootstrap_master failed: {e:?}");
+                panic!("bootstrap_master failed: {e:?}");
+            }
+        }
+    }
+
+    #[tokio::test]
+    #[ignore = "Requires a live database; see module docs for instructions"]
+    async fn bootstrap_campaign_on_live_db() {
+        let pool = create_live_pool().expect("Failed to create pool");
+        let client = pool
+            .get()
+            .await
+            .expect("Failed to get connection from live database");
+
+        // First bootstrap master
+        println!("Pre-requisite: bootstrap_master...");
+        bootstrap_master(&client)
+            .await
+            .expect("bootstrap_master must succeed first");
+
+        // Now test campaign bootstrap
+        println!("Testing bootstrap_campaign on live database...");
+        match bootstrap_campaign(&client, "test_campaign_live").await {
+            Ok(()) => {
+                println!("✓ bootstrap_campaign succeeded!");
+            }
+            Err(e) => {
+                eprintln!("✗ bootstrap_campaign failed: {e:?}");
+                panic!("bootstrap_campaign failed: {e:?}");
+            }
         }
     }
 }

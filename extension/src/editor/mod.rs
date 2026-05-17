@@ -2,10 +2,11 @@ use std::path::Path;
 
 const DESCRIPTION_EXT: &str = include_str!("description.ext");
 
+#[must_use]
 pub fn description_ext(mut mission_path: String) -> bool {
     if mission_path.ends_with('\\') {
         mission_path.pop();
-    };
+    }
     if mission_path.is_empty() {
         return false;
     }

@@ -39,8 +39,11 @@ pub(super) fn parse_campaign_arg(raw: &str) -> Result<Option<String>, &'static s
     }
 }
 
-#[instrument(level = "debug", name = "bootstrap_master", skip(client))]
-pub(super) async fn bootstrap_master(client: &Client) -> Result<(), QueryResult> {
+/// Creates the master schema + tables + indexes and seeds the default rank.
+/// Does NOT run the file-driven migrations — callers (production = bootstrap;
+/// tests = direct) can compose this with whatever data step they need.
+#[instrument(level = "debug", name = "bootstrap_schema", skip(client))]
+pub(crate) async fn bootstrap_schema(client: &Client) -> Result<(), QueryResult> {
     // Order matters: each entry depends on (at most) those above it
     // (schema → base tables → tables with FKs → indexes).
     let statements: &[(&str, &str)] = &[
@@ -54,13 +57,41 @@ pub(super) async fn bootstrap_master(client: &Client) -> Result<(), QueryResult>
         (master::PLAYER_CERTS, "player_certs table"),
         (master::PLAYER_CERTS_IDX_STEAM, "player_certs steam index"),
         (master::PLAYER_CERTS_IDX_CERT, "player_certs cert index"),
+        (master::MIGRATION_STATE, "migration_state table"),
     ];
 
     for (sql, desc) in statements {
         if let Err(e) = client.execute(*sql, &[]).await {
-            return Err(transient_error(&format!("Failed to create {}", desc), e));
+            return Err(transient_error(&format!("Failed to create {desc}"), e));
         }
     }
+
+    // Seed the default rank (0, 'Unranked') so player_info.rank's FK default
+    // is always satisfied. Files in database/migrations/ranks/ may override
+    // the display_name via the migration UPSERT below.
+    if let Err(e) = client
+        .execute(
+            "INSERT INTO skua_master.ranks (id, display_name) \
+             VALUES (0, 'Unranked') \
+             ON CONFLICT (id) DO NOTHING",
+            &[],
+        )
+        .await
+    {
+        return Err(transient_error("Failed to seed default rank", e));
+    }
+
+    Ok(())
+}
+
+#[instrument(level = "debug", name = "bootstrap_master", skip(client))]
+pub(super) async fn bootstrap_master(client: &Client) -> Result<(), QueryResult> {
+    bootstrap_schema(client).await?;
+
+    // File-driven reconciliation of cert/rank rows. Runs every bootstrap so
+    // adds/removes from `database/migrations/` are picked up on server restart.
+    crate::certification::migrate(client).await?;
+    crate::ranks::migrate(client).await?;
 
     info!("master schema bootstrapped");
     Ok(())
@@ -83,16 +114,16 @@ pub(super) async fn bootstrap_campaign(
     for (template, desc) in statements {
         let sql = template.replace("${campaign_id}", campaign_id);
         if let Err(e) = client.execute(&sql, &[]).await {
-            return Err(transient_error(&format!("Failed to create {}", desc), e));
+            return Err(transient_error(&format!("Failed to create {desc}"), e));
         }
     }
 
-    let register_sql = r#"
+    let register_sql = r"
         INSERT INTO skua_master.campaigns (campaign_id)
         VALUES ($1)
         ON CONFLICT (campaign_id) DO NOTHING
-    "#;
-    let campaign_id_formatted = format!("skua_campaign_{}", campaign_id);
+    ";
+    let campaign_id_formatted = format!("skua_campaign_{campaign_id}");
     if let Err(e) = client
         .execute(register_sql, &[&campaign_id_formatted])
         .await
@@ -138,12 +169,12 @@ pub(super) async fn do_bootstrap(campaign_id: Option<String>) -> QueryResult {
     QueryResult::done()
 }
 
+#[allow(clippy::needless_pass_by_value)] // (Arma commands must take owned args.)
 /// Arma-callable entry point. Spawns the bootstrap onto the global runtime and
 /// returns `Processing`; result is delivered via `skua:database` callback.
 pub fn bootstrap(ctx: Context, campaign_id: String) -> QueryState {
-    let campaign = match parse_campaign_arg(&campaign_id) {
-        Ok(c) => c,
-        Err(_) => return QueryState::InvalidArgument,
+    let Ok(campaign) = parse_campaign_arg(&campaign_id) else {
+        return QueryState::InvalidArgument;
     };
 
     RUNTIME.spawn(async move {

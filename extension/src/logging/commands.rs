@@ -5,6 +5,7 @@ use tracing::Level;
 
 use super::LOG_LEVEL;
 
+#[allow(clippy::needless_pass_by_value)] // (Arma commands must take owned args.)
 /// Set the log level dynamically. Valid levels: ERROR, WARN, INFO, DEBUG, TRACE.
 ///
 /// Returns the new level on success, or an error message describing why the
@@ -16,7 +17,7 @@ pub fn set_level(level: String) -> Result<String, String> {
         "INFO" => Level::INFO,
         "DEBUG" => Level::DEBUG,
         "TRACE" => Level::TRACE,
-        other => return Err(format!("unknown log level: {}", other)),
+        other => return Err(format!("unknown log level: {other}")),
     };
 
     match LOG_LEVEL.write() {
@@ -31,8 +32,7 @@ pub fn set_level(level: String) -> Result<String, String> {
 pub fn get_level() -> String {
     LOG_LEVEL
         .read()
-        .map(|level| level.to_string())
-        .unwrap_or_else(|_| "INFO".to_string())
+        .map_or_else(|_| "INFO".to_string(), |level| level.to_string())
 }
 
 pub fn group() -> Group {

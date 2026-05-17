@@ -72,14 +72,17 @@ pub struct QueryResult {
 }
 
 impl QueryResult {
+    #[must_use]
     pub fn new(state: QueryState) -> Self {
         Self { state, error: None }
     }
 
+    #[must_use]
     pub fn done() -> Self {
         Self::new(QueryState::Done)
     }
 
+    #[must_use]
     pub fn processing() -> Self {
         Self::new(QueryState::Processing)
     }
@@ -125,6 +128,27 @@ impl FromArma for QueryResult {
             Err(arma_rs::FromArmaError::InvalidPrimitive(
                 "Expected array".into(),
             ))
+        }
+    }
+}
+
+/// Outcome carrying data on success, [`QueryError`] on failure. Encoded on the
+/// wire as `[state, payload]` — `[Done, data]` or `[TransientFailure, error]`.
+#[derive(Debug)]
+pub enum QueryOutcome<T> {
+    Done(T),
+    Failed(QueryError),
+}
+
+impl<T: IntoArma> IntoArma for QueryOutcome<T> {
+    fn to_arma(&self) -> arma_rs::Value {
+        match self {
+            QueryOutcome::Done(data) => {
+                arma_rs::Value::Array(vec![QueryState::Done.to_arma(), data.to_arma()])
+            }
+            QueryOutcome::Failed(err) => {
+                arma_rs::Value::Array(vec![QueryState::TransientFailure.to_arma(), err.to_arma()])
+            }
         }
     }
 }

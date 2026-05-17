@@ -1,0 +1,6 @@
+{
+  "display_name": "Pilot",
+  "document": "https://docs.skua.international/certs/pilot",
+  "grant_event": "skua_cert_pilot",
+  "revoke_event": "skua_cert_revoke_pilot"
+}

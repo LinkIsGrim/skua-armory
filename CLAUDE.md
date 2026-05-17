@@ -55,15 +55,29 @@ Rust + arma-rs. Entry point `src/lib.rs` registers:
 - `diagnostics` — runtime + database state snapshot.
 - `logger` group — `set_level`/`get_level` for dynamic tracing-level control.
 - `database` group — PostgreSQL via `deadpool-postgres` / `tokio-postgres`, used by the `persistence` addon.
+- `certification` group — `list`/`get_player`/`grant`/`revoke` for player certifications. Definitions live in `database/migrations/certifications/*.json`.
+- `ranks` group — `list`/`get_player`/`set_player` for player ranks. Definitions live in `database/migrations/ranks/*.json`.
 
 Module layout under `src/`:
 - `core/` — global `tokio::Runtime` via `LazyLock`. Spawn async work onto `RUNTIME`.
-- `error/` — unified `DbError`, `QueryResult`/`QueryState`, and the `transient_error` helper (logs + returns a TransientFailure result with caller location).
+- `error/` — unified `DbError`, `QueryResult`/`QueryState`/`QueryOutcome<T>`, and the `transient_error`/`transient_query_error` helpers (log + return a TransientFailure with caller location).
 - `logging/` — `ArmaLayer` (a `tracing_subscriber::Layer` that forwards events to Arma via the `skua_ext_log` callback) plus `logger:set_level`/`get_level` commands. Initialized once at extension build with `logging::init(ctx)`.
-- `database/` — split into `state.rs` (atomic `DatabaseState`), `pool.rs` (deadpool init from `DATABASE_*` env vars, lazy `OnceCell`), `schema.rs` (bootstrap master + optional campaign, `regex`-validated key), `sql.rs` (`include_str!` of `sql/*.sql`), `commands.rs` (Arma group: `bootstrap`, `state`).
+- `database/` — split into `state.rs` (atomic `DatabaseState`), `pool.rs` (deadpool init from `DATABASE_*` env vars, lazy `OnceCell`), `schema.rs` (`bootstrap_schema` creates tables + seeds default rank; `bootstrap_master` adds cert/rank migration on top), `sql.rs` (`include_str!` of `sql/*.sql`), `commands.rs` (Arma group: `bootstrap`, `state`).
 - `database/sql/` — numbered SQL files (000–099 = master, 100–199 = campaign templates with `${campaign_id}` placeholder).
+- `domain/` — `PlayerId(u64)` with FromArma/IntoArma/ToSql so commands can take `PlayerId` directly.
+- `certification/` + `ranks/` — each module is `commands.rs` (Arma entry points) + `migration.rs` (file-driven reconciliation) + `types.rs` + `tests.rs`. `*_inner` functions take a raw `tokio_postgres::Client` for direct integration testing.
 
-SQF callers use `"skua" callExtension [<command>, <args>]`. The Arma callback channel for the database group is `skua:database` (e.g. `skua:database / bootstrap`). The logger emits on `skua_ext_log`.
+SQF callers use `"skua" callExtension [<command>, <args>]`. The Arma callback channel for the database group is `skua:database` (e.g. `skua:database / bootstrap`); cert/rank callbacks land on `skua:certification` / `skua:ranks`. The logger emits on `skua_ext_log`.
+
+### File-driven migrations (`database/migrations/`)
+Cert and rank definitions are authored as JSON files. They're embedded into the extension binary at compile time via `include_dir!` and reconciled with the DB on every bootstrap:
+1. UPSERT every file's contents.
+2. DELETE DB rows that no longer have a backing file AND whose `created_at` predates `skua_master.migration_state.last_migration_at` (in-game additions after the last sync are preserved).
+3. Bump `last_migration_at`.
+
+Editing the migration files requires rebuilding the extension binary. No HEMTT side files needed at runtime.
+
+Default rank `(0, 'Unranked')` is bootstrap-seeded so `player_info.rank`'s FK default is always satisfied even on a cold start with no rank files.
 
 Database state constants (`DATABASESTATE_*`) in `addons/main/script_macros_enums.hpp` are checked at runtime as strings (not parsed numbers) — see comment at top of that file. The enum_sync test in `extension/src/database/tests.rs` enforces consistency.
 
