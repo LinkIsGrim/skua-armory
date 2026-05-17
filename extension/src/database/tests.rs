@@ -488,9 +488,7 @@ mod live_db {
         let password = env::var("DATABASE_PASSWORD").unwrap_or_else(|_| "changeit".to_string());
         let dbname = env::var("DATABASE_NAME").unwrap_or_else(|_| "postgres".to_string());
 
-        println!(
-            "Connecting to live database: {user}@{host}:{port}/{dbname}"
-        );
+        println!("Connecting to live database: {user}@{host}:{port}/{dbname}");
 
         let mut cfg = Config::new();
         cfg.host(&host)
