@@ -5,5 +5,8 @@
     "perk": "Permanent ACE Engineer (repair access). Cheaper fuel and ammo.",
     "pay_bonus": 300,
     "grant_event": "skua_cert_mechanic",
-    "revoke_event": "skua_cert_revoke_mechanic"
+    "revoke_event": "skua_cert_revoke_mechanic",
+    "requires": [
+        "rifleman"
+    ]
 }

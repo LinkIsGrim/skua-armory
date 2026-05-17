@@ -5,5 +5,8 @@
     "perk": "Permanent ACE Medic. Slight discount on medical supplies.",
     "pay_bonus": 200,
     "grant_event": "skua_cert_medic",
-    "revoke_event": "skua_cert_revoke_medic"
+    "revoke_event": "skua_cert_revoke_medic",
+    "requires": [
+        "rifleman"
+    ]
 }

@@ -5,5 +5,6 @@
     "perk": "Access to the shop with basic equipment and weapons. Access to other certifications.",
     "pay_bonus": 2000,
     "grant_event": "skua_cert_rifleman",
-    "revoke_event": "skua_cert_revoke_rifleman"
+    "revoke_event": "skua_cert_revoke_rifleman",
+    "requires": []
 }

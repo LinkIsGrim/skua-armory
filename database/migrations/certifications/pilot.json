@@ -1,9 +1,0 @@
-{
-  "display_name": "Pilot",
-  "document": "https://docs.skua.international/certs/pilot",
-  "description": "Proven ability to pilot any air vehicle in the game. This cannot be taught, only tested for.",
-  "perk": "Access to the pilot shop and exclusive aircraft.",
-  "pay_bonus": 200,
-  "grant_event": "skua_cert_pilot",
-  "revoke_event": "skua_cert_revoke_pilot"
-}

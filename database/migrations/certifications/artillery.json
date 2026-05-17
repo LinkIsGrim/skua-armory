@@ -4,5 +4,8 @@
     "perk": "Ability to purchase 60mm mortars and ammo at their own discretion.",
     "pay_bonus": 100,
     "grant_event": "skua_cert_artillery",
-    "revoke_event": "skua_cert_revoke_artillery"
+    "revoke_event": "skua_cert_revoke_artillery",
+    "requires": [
+        "rifleman"
+    ]
 }

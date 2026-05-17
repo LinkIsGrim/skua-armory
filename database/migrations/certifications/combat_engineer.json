@@ -5,5 +5,10 @@
     "perk": "Consolidation of prior certifications. Cheaper repair parts. Ability to purchase engineering vehicles at their own discretion.",
     "pay_bonus": 500,
     "grant_event": "skua_cert_combat_engineer",
-    "revoke_event": "skua_cert_revoke_combat_engineer"
+    "revoke_event": "skua_cert_revoke_combat_engineer",
+    "requires": [
+        "rifleman",
+        "mechanic",
+        "eod"
+    ]
 }

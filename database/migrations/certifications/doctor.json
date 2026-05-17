@@ -5,5 +5,9 @@
     "perk": "Permanent ACE Doctor: turn vehicles into medical vehicles and cheaper medical supplies. Some actions may be faster than a medic. Can teach the medic certification and temporarily turn a rifleman into a medic.",
     "pay_bonus": 400,
     "grant_event": "skua_cert_doctor",
-    "revoke_event": "skua_cert_revoke_doctor"
+    "revoke_event": "skua_cert_revoke_doctor",
+    "requires": [
+        "rifleman",
+        "medic"
+    ]
 }

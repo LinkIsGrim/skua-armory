@@ -5,5 +5,8 @@
     "perk": "Access to ghillie suits. Cheaper ATAK and binoculars.",
     "pay_bonus": 100,
     "grant_event": "skua_cert_recon",
-    "revoke_event": "skua_cert_revoke_recon"
+    "revoke_event": "skua_cert_revoke_recon",
+    "requires": [
+        "rifleman"
+    ]
 }

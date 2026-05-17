@@ -1,0 +1,14 @@
+{
+  "display_name": "Pilot (CAS/CAP)",
+  "document": "https://docs.skua.international/certs/pilot_cas",
+  "description": "Proven ability to pilot rotary and fixed-wing aircraft for close air support and combat air patrol missions. This cannot be taught, only tested for.",
+  "perk": "Ability to purchase attack helicopters and fast movers at their own discretion.",
+  "pay_bonus": 200,
+  "grant_event": "skua_cert_pilot_cas",
+  "revoke_event": "skua_cert_revoke_pilot_cas",
+  "requires": [
+    "rifleman",
+    "rto",
+    "pilot_logistics"
+  ]
+}
