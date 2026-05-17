@@ -9,7 +9,7 @@ use super::LOG_LEVEL;
 ///
 /// Returns the new level on success, or an error message describing why the
 /// request was rejected (unknown level, poisoned lock).
-pub fn set_level(level: String) -> Result<String, String> {
+pub fn set_level(level: &str) -> Result<String, String> {
     let new_level = match level.to_uppercase().as_str() {
         "ERROR" => Level::ERROR,
         "WARN" => Level::WARN,

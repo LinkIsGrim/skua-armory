@@ -22,13 +22,13 @@ impl PlayerId {
     /// DB column as long as both sides use the same convention.
     #[must_use] 
     pub const fn as_i64(self) -> i64 {
-        self.0 as i64
+        self.0.cast_signed()
     }
 
     /// Reverse of [`as_i64`].
     #[must_use] 
     pub const fn from_i64(raw: i64) -> Self {
-        Self(raw as u64)
+        Self(raw.cast_unsigned())
     }
 
     #[must_use] 

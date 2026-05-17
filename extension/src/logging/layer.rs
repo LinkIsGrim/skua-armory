@@ -5,6 +5,8 @@ use tracing::{Level, Subscriber};
 use tracing_subscriber::Layer;
 use tracing_subscriber::layer::Context as LayerContext;
 
+use std::fmt::Write;
+
 use super::LOG_LEVEL;
 
 pub struct ArmaLayer {
@@ -16,10 +18,10 @@ impl ArmaLayer {
         Self { context }
     }
 
-    fn should_log(&self, level: &Level) -> bool {
+    fn should_log(&self, level: Level) -> bool {
         LOG_LEVEL
             .read()
-            .map(|current| level <= &*current)
+            .map(|current| level <= *current)
             .unwrap_or(true)
     }
 }
@@ -31,7 +33,7 @@ where
     fn on_event(&self, event: &tracing::Event<'_>, _ctx: LayerContext<'_, S>) {
         let metadata = event.metadata();
 
-        if !self.should_log(metadata.level()) {
+        if !self.should_log(*metadata.level()) {
             return;
         }
 
@@ -65,9 +67,10 @@ impl tracing::field::Visit for MessageVisitor<'_> {
             *self.0 = value.to_string();
         } else {
             if !self.0.is_empty() {
-                self.0.push_str(", ");
+                let _ = write!(self.0, "{} = {}", field.name(), value);
             }
             self.0.push_str(&format!("{} = {}", field.name(), value));
+            let _ = write!(self.0, "{} = {:?}", field.name(), value);
         }
     }
 
@@ -81,7 +84,7 @@ impl tracing::field::Visit for MessageVisitor<'_> {
             if !self.0.is_empty() {
                 self.0.push_str(", ");
             }
-            self.0.push_str(&format!("{} = {:?}", field.name(), value));
+            let _ = write!(self.0, "{} = {:?}", field.name(), value);
         }
     }
 }
