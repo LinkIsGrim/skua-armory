@@ -169,6 +169,7 @@ pub(super) async fn do_bootstrap(campaign_id: Option<String>) -> QueryResult {
     QueryResult::done()
 }
 
+#[allow(clippy::needless_pass_by_value)] // (Arma commands must take owned args.)
 /// Arma-callable entry point. Spawns the bootstrap onto the global runtime and
 /// returns `Processing`; result is delivered via `skua:database` callback.
 pub fn bootstrap(ctx: Context, campaign_id: String) -> QueryState {

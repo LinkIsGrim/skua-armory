@@ -18,7 +18,7 @@ impl ArmaLayer {
         Self { context }
     }
 
-    fn should_log(&self, level: Level) -> bool {
+    fn should_log(level: Level) -> bool {
         LOG_LEVEL
             .read()
             .map(|current| level <= *current)
@@ -33,7 +33,7 @@ where
     fn on_event(&self, event: &tracing::Event<'_>, _ctx: LayerContext<'_, S>) {
         let metadata = event.metadata();
 
-        if !self.should_log(*metadata.level()) {
+        if !ArmaLayer::should_log(*metadata.level()) {
             return;
         }
 
@@ -69,7 +69,6 @@ impl tracing::field::Visit for MessageVisitor<'_> {
             if !self.0.is_empty() {
                 let _ = write!(self.0, "{} = {}", field.name(), value);
             }
-            self.0.push_str(&format!("{} = {}", field.name(), value));
             let _ = write!(self.0, "{} = {:?}", field.name(), value);
         }
     }

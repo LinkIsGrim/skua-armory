@@ -5,6 +5,7 @@ use tracing::Level;
 
 use super::LOG_LEVEL;
 
+#[allow(clippy::needless_pass_by_value)] // (Arma commands must take owned args.)
 /// Set the log level dynamically. Valid levels: ERROR, WARN, INFO, DEBUG, TRACE.
 ///
 /// Returns the new level on success, or an error message describing why the
