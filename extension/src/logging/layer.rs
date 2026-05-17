@@ -19,10 +19,7 @@ impl ArmaLayer {
     }
 
     fn should_log(level: Level) -> bool {
-        LOG_LEVEL
-            .read()
-            .map(|current| level <= *current)
-            .unwrap_or(true)
+        LOG_LEVEL.read().map_or(true, |current| level <= *current)
     }
 }
 
