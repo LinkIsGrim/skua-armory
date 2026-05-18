@@ -6,7 +6,7 @@ use arma_rs::{Extension, arma};
 use uuid::Uuid;
 
 pub mod core;
-pub use core::RUNTIME;
+pub use core::{CONTEXT, RUNTIME};
 
 pub mod error;
 pub use error::{DbError, QueryError, QueryResult, QueryState};
@@ -17,6 +17,7 @@ pub mod domain;
 pub mod editor;
 pub mod logging;
 pub mod ranks;
+pub mod sync;
 
 pub use domain::PlayerId;
 
@@ -37,7 +38,10 @@ fn init() -> Extension {
         .group("ranks", ranks::group())
         .finish();
 
+    let _ = CONTEXT.set(ext.context());
     logging::init(ext.context());
+
+    sync::watchdog::spawn();
 
     ext
 }

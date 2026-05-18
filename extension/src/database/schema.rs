@@ -164,6 +164,12 @@ pub(super) async fn do_bootstrap(campaign_id: Option<String>) -> QueryResult {
 
     db.set_state(DatabaseState::ConnectedInit);
 
+    // Fire-and-forget the static-data push (cert list, rank list, ...) so the
+    // `database/bootstrap` callback isn't delayed by it. Each domain has its
+    // own `loaded` event — `database/initialized` does NOT imply cert/rank
+    // lists have landed in SQF yet.
+    crate::sync::trigger_post_bootstrap();
+
     info!(campaign_id = ?campaign_id, "bootstrap complete");
 
     QueryResult::done()

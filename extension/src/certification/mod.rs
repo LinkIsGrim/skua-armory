@@ -13,4 +13,7 @@ mod types;
 mod tests;
 
 pub use commands::group;
+pub(crate) use commands::{
+    dispatch_grant_event, dispatch_revoke_event, get_player_inner, push_list, push_player_certs,
+};
 pub(crate) use migration::migrate;

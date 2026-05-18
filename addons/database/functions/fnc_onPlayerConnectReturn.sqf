@@ -1,7 +1,7 @@
 #include "..\script_component.hpp"
 /*
  * Author: LinkIsGrim
- * Handles the extension callback for database:upsert_player. Parses the
+ * Handles the extension callback for database:player_connect. Parses the
  * returned player_info row, attaches it to the player unit (public broadcast),
  * and fires QGVAR(playerReady) so other addons can chain off it.
  *
@@ -15,12 +15,12 @@
  */
 
 params ["_data"];
-TRACE_1("fnc_onUpsertPlayerReturn",_this);
+TRACE_1("fnc_onPlayerConnectReturn",_this);
 
 (parseSimpleArray _data) params ["_status", "_return"];
 
 if (_status != QUERYSTATE_DONE) exitWith {
-    ERROR_2("Player UPSERT failed: %1: %2",_status,_return);
+    ERROR_2("Player connect failed: %1: %2",_status,_return);
 };
 
 private _info = fromJSON _return;
@@ -28,7 +28,7 @@ private _uid = _info get "steam_id";
 private _player = _uid call BIS_fnc_getUnitByUID;
 
 if (isNull _player) exitWith {
-    WARNING_1("UPSERT returned for unknown player UID %1; dropping.",_uid);
+    WARNING_1("player_connect returned for unknown player UID %1; dropping.",_uid);
 };
 
 _player setVariable [QGVAR(info), _info, true];

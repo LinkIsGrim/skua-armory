@@ -4,4 +4,4 @@ params ["_uid", "_hasInterface", "_player"];
 
 if (!_hasInterface) exitWith {};
 
-"skua" callExtension ["database:upsert_player", [_uid, name _player]];
+"skua" callExtension ["database:player_connect", [_uid, name _player]];

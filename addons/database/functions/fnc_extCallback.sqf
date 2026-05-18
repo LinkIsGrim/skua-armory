@@ -13,7 +13,7 @@
  * None.
  *
  * Example:
- * ["skua:database", "upsert_player", ["0", 0, 0]] call skua_database_fnc_extCallback;
+ * ["skua:database", "player_connect", ["0", 0, 0]] call skua_database_fnc_extCallback;
  *
  * Public: No
  */
@@ -22,7 +22,7 @@ params ["_name", "_function", "_data"];
 if (_name != "skua:database") exitWith {};
 
 switch (_function) do {
-    case "upsert_player": {_data call FUNC(onUpsertPlayerReturn)};
+    case "player_connect": {_data call FUNC(onPlayerConnectReturn)};
     case "bootstrap": {_data call FUNC(onBootstrapReturn)};
     default {ERROR_1("Unhandled extension callback function: %1",_function)};
 };

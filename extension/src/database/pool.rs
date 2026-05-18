@@ -2,6 +2,7 @@
 
 use deadpool_postgres::{Manager, Pool};
 use std::env;
+use std::time::Duration;
 use tokio::sync::OnceCell;
 use tokio_postgres::{Config, NoTls};
 use tracing::debug;
@@ -45,8 +46,14 @@ impl Database {
             .unwrap_or(16);
 
         let manager = Manager::new(cfg, NoTls);
+        // Bound the failure-mode latency: without these timeouts, get_conn()
+        // can hang for tens of seconds on a TCP handshake to a vanished host,
+        // stretching watchdog ticks during a DB outage. 5s lets a single tick
+        // surface "DB unreachable" quickly and retry on the next interval.
         let pool = Pool::builder(manager)
             .max_size(pool_size)
+            .wait_timeout(Some(Duration::from_secs(5)))
+            .create_timeout(Some(Duration::from_secs(5)))
             .build()
             .expect("Failed to build postgres pool");
 

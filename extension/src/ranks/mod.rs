@@ -13,4 +13,5 @@ mod types;
 mod tests;
 
 pub use commands::group;
+pub(crate) use commands::push_list;
 pub(crate) use migration::migrate;
