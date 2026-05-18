@@ -1,17 +1,23 @@
 //! Periodic cert-state watchdog.
 //!
-//! Tracks a `PlayerId → {cert_id, ...}` snapshot of what each online player
-//! should have in-game. Every `SKUA_WATCHDOG_INTERVAL_SECS` (default 300) the
-//! tick queries the DB for each connected player's current cert set, diffs
-//! against the snapshot, and fires `skua:certification/grant` /
-//! `skua:certification/revoke` callbacks for the differences so SQF picks up
-//! DB-side changes without re-connect.
+//! Two responsibilities:
+//! - **Player cert diff**: Tracks a `PlayerId → {cert_id, ...}` snapshot of
+//!   what each online player should have in-game. Every
+//!   `SKUA_WATCHDOG_INTERVAL_SECS` (default 30) the tick queries the DB for
+//!   each connected player's current cert set, diffs against the snapshot, and
+//!   fires `skua:certification/grant` / `skua:certification/revoke` callbacks
+//!   for the differences.
+//! - **Certifications list diff**: Tracks a snapshot of the certifications list
+//!   (by SHA256 hash of the JSON representation). Every tick, re-queries the
+//!   list, compares hashes, and pushes `skua:certification/list` to SQF if
+//!   cert definitions (additions, removals, modifications) are detected.
 //!
 //! Seeding:
 //! - `database:player_connect` calls [`seed_player`] after `push_player_certs`
 //!   completes, so the watchdog's first observation of the player has the
 //!   correct baseline (no double-grant on first tick).
 //! - `database:player_disconnect` calls [`clear_player`].
+//! - Cert list snapshot is seeded on first watchdog tick.
 //!
 //! Players in `CONNECTED` with no entry in [`WATCHDOG_STATE`] are skipped this
 //! tick — that means `player_connect` is still resolving and seeding hasn't
@@ -26,7 +32,9 @@ use arma_rs::Context;
 use tokio_postgres::Client;
 use tracing::{debug, error, info, instrument, warn};
 
-use crate::certification::{dispatch_grant_event, dispatch_revoke_event, get_player_inner};
+use crate::certification::{
+    dispatch_grant_event, dispatch_revoke_event, get_player_inner, list_inner, push_list,
+};
 use crate::core::{CONNECTED, CONTEXT, RUNTIME};
 use crate::database::get_client;
 use crate::domain::PlayerId;
@@ -36,6 +44,11 @@ const TICK_ENV_VAR: &str = "SKUA_WATCHDOG_INTERVAL_SECS";
 
 static WATCHDOG_STATE: LazyLock<RwLock<HashMap<PlayerId, HashSet<String>>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
+
+/// SHA256 hash of the certifications list JSON representation. Updated when
+/// cert definitions (additions, removals, modifications) are detected.
+/// Initialized to None on first tick; subsequent ticks compare against this.
+static CERT_LIST_SNAPSHOT: LazyLock<RwLock<Option<String>>> = LazyLock::new(|| RwLock::new(None));
 
 /// Records the player's current cert set. Called from `database:player_connect`
 /// after `push_player_certs` has emitted the initial grant callbacks; the
@@ -54,6 +67,16 @@ pub(crate) fn clear_player(player_id: PlayerId) {
         .write()
         .expect("WATCHDOG_STATE poisoned")
         .remove(&player_id);
+}
+
+/// Computes a hash of the certification list for diff detection. Returns the
+/// JSON representation of the list (`serde_json` serialization is deterministic),
+/// suitable for equality comparison across ticks.
+async fn compute_cert_list_hash(client: &Client) -> Result<String, String> {
+    let certs = list_inner(client)
+        .await
+        .map_err(|e| format!("Failed to query certifications: {e}"))?;
+    serde_json::to_string(&certs).map_err(|e| format!("Failed to serialize certifications: {e}"))
 }
 
 /// Spawns the periodic watchdog task on the global runtime. Idempotent in
@@ -91,9 +114,6 @@ async fn tick() {
         .iter()
         .copied()
         .collect();
-    if players.is_empty() {
-        return;
-    }
 
     let Some(ctx) = CONTEXT.get() else {
         warn!("watchdog tick aborted: extension context not initialized");
@@ -108,9 +128,49 @@ async fn tick() {
         }
     };
 
-    debug!(player_count = players.len(), "watchdog tick");
-    for player_id in players {
-        diff_player(ctx, &client, player_id).await;
+    // Diff certifications list
+    diff_cert_list(ctx, &client).await;
+
+    // Diff player certifications only if there are connected players
+    if !players.is_empty() {
+        debug!(player_count = players.len(), "watchdog tick");
+        for player_id in players {
+            diff_player(ctx, &client, player_id).await;
+        }
+    }
+}
+
+#[instrument(level = "debug", name = "watchdog_diff_cert_list", skip_all)]
+async fn diff_cert_list(ctx: &Context, client: &Client) {
+    let new_hash = match compute_cert_list_hash(client).await {
+        Ok(h) => h,
+        Err(err) => {
+            error!(error = %err, "watchdog: failed to compute cert list hash");
+            return;
+        }
+    };
+
+    let changed = {
+        let mut snapshot = CERT_LIST_SNAPSHOT
+            .write()
+            .expect("CERT_LIST_SNAPSHOT poisoned");
+        if let Some(old_hash) = snapshot.as_ref() {
+            old_hash != &new_hash
+        } else {
+            // First tick: initialize snapshot without pushing
+            debug!("cert list snapshot initialized");
+            *snapshot = Some(new_hash);
+            return;
+        }
+    }; // Guard dropped here
+
+    if changed {
+        debug!("watchdog detected cert list changes");
+        CERT_LIST_SNAPSHOT
+            .write()
+            .expect("CERT_LIST_SNAPSHOT poisoned")
+            .replace(new_hash);
+        push_list(ctx, client).await;
     }
 }
 

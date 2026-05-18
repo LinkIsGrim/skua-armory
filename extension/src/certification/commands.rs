@@ -118,7 +118,7 @@ pub(crate) async fn push_list(ctx: &Context, client: &Client) {
 }
 
 #[instrument(level = "debug", name = "certification_list", skip_all)]
-pub(super) async fn list_inner(client: &Client) -> Result<Vec<Certification>, QueryError> {
+pub(crate) async fn list_inner(client: &Client) -> Result<Vec<Certification>, QueryError> {
     let rows = client
         .query(
             "SELECT id, display_name, document, description, perk, pay_bonus,

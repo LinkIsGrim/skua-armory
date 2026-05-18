@@ -15,6 +15,9 @@
 
 pub(crate) mod watchdog;
 
+#[cfg(test)]
+mod tests;
+
 use tracing::{error, instrument};
 
 use crate::core::{CONTEXT, RUNTIME};
