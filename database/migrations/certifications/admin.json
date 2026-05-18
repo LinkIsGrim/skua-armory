@@ -1,0 +1,18 @@
+{
+    "display_name": "Administrator",
+    "document": "https://lolno.com",
+    "description": "Responsible for server administration.",
+    "perk": "Suffering. Endless suffering. Also Zeus access and the ability to manage certifications at will.",
+    "pay_bonus": -1000,
+    "comment": "Suffering is not a paid job.",
+    "grant_event": "skua_cert_admin",
+    "revoke_event": "skua_cert_revoke_admin",
+    "requires": [
+        "lack_of_will_to_live",
+        "too_much_free_time",
+        "zeus",
+        "firefigher (get it? you'll be putting out fires)",
+        "eod (because you'll be defusing bombs, metaphorically)",
+        "okay, that's enough of that bit"
+    ]
+}

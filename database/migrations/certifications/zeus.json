@@ -1,0 +1,12 @@
+{
+    "display_name": "Zeus",
+    "document": "https://docs.skua.international/certs/zeus",
+    "description": "Ability to create missions using Zeus.",
+    "perk": "Ability to self-assign a Zeus module (use is logged) and pay bonus.",
+    "pay_bonus": 500,
+    "grant_event": "skua_cert_zeus",
+    "revoke_event": "skua_cert_revoke_zeus",
+    "requires": [
+        "rifleman"
+    ]
+}
