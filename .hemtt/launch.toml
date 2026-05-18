@@ -1,0 +1,118 @@
+[default]
+workshop = [
+    "450814997",  # CBA_A3
+    "497660133",  # CUP Weapons
+    "541888371",  # CUP Vehicles
+    "497661914",  # CUP Units
+    "3499977893", # Advanced Developer Tools
+    "1779063631", # Zeus Enhanced
+    "751965892",  # ACRE
+    "623475643",  # 3den Enhanced
+    "2983059191",  # @SMA Optics
+    "3500935186",  # [FOD] Zeus Additions
+    "2538286856",  # 2035 Ops-Core Helmets
+    "3023395342",  # 3DEN Attributes Fast Load
+    "766491311",   # ACE 3 Extension (Animations and Actions)
+    "2940718092",  # ACE 3 Extension (Animations and Actions) Fix
+    "2132195038",  # ACE Interaction Menu Expansion - Enhanced
+    "2202413047",  # ACE No Uniform Restrictions
+    "3595979374",  # ACE Wardrobe Extended
+    "3670432637",  # Acre Radio Manager
+    "3290428822",  # Add Faction Prefix 2035 for Aegis, Atlas, USMC, Opposing Forces
+    "3688159183",  # Advanced ACE Repair - Inferno Edition
+    "2888888564",  # Advanced Equipment
+    "3573851584",  # Advanced Slingloading Redux
+    "3591353580",  # Aegis and JCA Compatibility
+    "1882627645",  # Anrop ACE3 Master
+    "3375426996",  # Arma 3 AddGis
+    "949252631",   # Arma 3 Aegis
+    "2225873516",  # Arma 3 Atlas
+    "1873244913",  # Arma 3 Atlas - Opposing Forces
+    "3372961467",  # Arma 3 Vanilla & Aegis OCP Retextures
+    "2372036642",  # BackpackOnChest - Redux
+    "3283645995",  # Breach - Rewrite
+    "2967119946",  # Bucket - Zeus Terrain Editor
+    "2914901109",  # Chameleon Trenches
+    "3480335211",  # Contact DLC Radiopack Rebalance
+    "2515887728",  # Crows Electronic Warfare
+    "2262006564",  # cTab 1erGTD
+    "3367106827",  # CUP Faction Name Prefix
+    "583496184",   # CUP Terrains - Core
+    "583544987",   # CUP Terrains - Maps
+    "1981964169",  # CUP Terrains - Maps 2.0
+    "2822758266",  # Deformer
+    "3351980695",  # Diwako's STALKER-like anomalies rework
+    "2512672547",  # Dom's View Distance Mod
+    "2262255106",  # Drongos Spooks and Anomalies
+    "1638341685",  # DUI - Squad Radar
+    "2815603726",  # E22 - Russian Armed Forces 2.0
+    "333310405",   # Enhanced Movement
+    "2034363662",  # Enhanced Movement Rework
+    "2931770233",  # Exocet Immersive Reloads
+    "3348605126",  # Expeditionary Forces - Compatibility Data For Non-Owners
+    "3290777775",  # Faster Weapon Lower
+    "2149949558",  # Fifty Shades of Beard
+    "3551040903",  # Fixed Reload Animations
+    "1354112941",  # GRAD Sling Helmet
+    "1224892496",  # Gruppe Adler Trenches
+    "3065316263",  # ILBE Pack for ACRE2 - Bagigi Repack
+    "3375788189",  # Immersion Cigs - Rewrite
+    "2291129343",  # Improved Melee System
+    "1883956552",  # Interiors for CUP
+    "3630690023",  # Inventory Dumper
+    "3333302397",  # JCA - Infantry Arsenal
+    "3337555434",  # JCA - Infantry Arsenal Compat Ace3
+    "3473383676",  # JCA - Infantry Equipment
+    "3417529347",  # JCA - MCRP Expansion 2035
+    "3417534462",  # JCA - MCRP Expansion MTP
+    "3596558862",  # JCA ACE3 Hearing Compatibility Patch
+    "3407948300",  # JSRS SOUNDMOD 2025
+    "3160918138",  # KJW's Medical Expansion - Core
+    "3150986025",  # KJW's No Holster Holster
+    "2917867026",  # KJW's Radiate
+    "2893363164",  # KJW's Two Primary Weapons
+    "2434257231",  # LAMBS_Danger.fsm (DEV)
+    "3591339505",  # Less Glossy Weapons
+    "2945234724",  # Lightweight Factions
+    "3563610964",  # Lightweight Suppression
+    "3617271479",  # LOT - Glock 21
+    "3609592136",  # LOT - M1014
+    "2472780935",  # M224 60mm Mortar (ACE)
+    "1389082106",  # Mid-Detail Texture
+    "452078362",   # Missing Units - Complete package
+    "1543390130",  # MS_IFF_Strobe
+    "1388025252",  # MX Series Retexture
+    "1855374151",  # MX Series Retexture compat with Aegis/EF
+    "2126300184",  # No Actions
+    "2187272188",  # Not what they seem...
+    "3284809188",  # Phenosi's Door kick! (IMS + Breach - Rewrite)
+    "3388436328",  # QAV - Ripsaw
+    "3150497912",  # Reaction Forces - Creator DLC Compatibility Data for Non-Owners
+    "3438988923",  # RemainOverNight
+    "3591608460",  # Roots Cyber Warfare [Zeus and 3DEN]
+    "939686262",   # Saint Kapaulio
+    "3345739516",  # SCAR Weapon Family (JCA Expansion)
+    "3518160275",  # SCAR Weapon Family Compat Ace3
+    "3283642267",  # Speshal Core
+    "2966168738",  # Terrain Lib
+    "3256534418",  # Trencher - Eden Trench Generation
+    "940841212",   # Uriki's Mission Items
+    "1703187116",  # VET_Unflipping
+    "823636749",   # VSM All-In-One Collection
+    "3586783367",  # VSM-ACE Compatibility V2
+    "2735613231",  # Weather Plus
+    "2789152015",  # WebKnight's Zombies and Creatures
+    "2636962953",  # Western Sahara - Creator DLC Compatibility Data for Non-Owners
+    "1341958961",  # X66-Mammoth Tank
+    "642912021",   # ZEC - Zeus and Eden Templates / Building Compositions
+    "750186990",   # ZECCUP - Zeus and Eden Templates for CUP Terrains
+    "3567067667",  # ZEIC - Zeus and Eden Interior Community Version
+    "2387297579",  # Zeus Additions
+    "2461386136",  # Zeus Immersion Sounds
+    "2450921295",  # Zulu Headless Client (ZHC)
+]
+parameters = [
+    """-name=CPT. Grim""",
+    "-malloc=mimalloc_v332_20260430",
+    "-maxVRAM=12287",
+]

@@ -1,17 +1,26 @@
-//! Arma-callable `player_info` commands.
+//! Arma-callable player lifecycle commands.
 //!
-//! `upsert_player` upserts a row in `skua_master.player_info` keyed on
-//! `steam_id`. Insert seeds `name`; conflict updates `name` and bumps
-//! `last_seen` to `NOW()`. Returns the full row to SQF so the server can
-//! attach it to the player unit and fire `skua_database_playerReady`.
+//! `player_connect` is the single SQF-facing entry point fired when a player
+//! joins. It (1) records the player in [`crate::core::CONNECTED`] so live-load
+//! flows can target online players, (2) upserts the row in
+//! `skua_master.player_info` (insert seeds `name`; conflict updates `name` and
+//! bumps `last_seen`), and (3) replays the player's stored cert grants via
+//! [`crate::certification::push_player_certs`].
+//!
+//! The upsert result is delivered on `skua:database/player_connect` so SQF can
+//! attach the row to the player unit and fire `skua_database_playerReady`. The
+//! cert grants land on `skua:certification/grant`, one callback per cert.
+//!
+//! `player_disconnect` is fire-and-forget: it just removes the player from
+//! `CONNECTED`. `last_seen` is bumped on the next connect's upsert.
 
 use arma_rs::Context;
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 use tokio_postgres::Client;
-use tracing::{error, instrument};
+use tracing::{debug, error, instrument};
 
-use crate::core::RUNTIME;
+use crate::core::{CONNECTED, RUNTIME};
 use crate::database::get_client;
 use crate::domain::PlayerId;
 use crate::error::{QueryError, QueryOutcome, QueryState, transient_query_error};
@@ -30,32 +39,66 @@ pub(super) struct PlayerInfo {
 }
 
 #[allow(clippy::needless_pass_by_value)] // (Arma commands must take owned args.)
-pub fn upsert_player(ctx: Context, player_id: PlayerId, name: String) -> QueryState {
+pub fn player_connect(ctx: Context, player_id: PlayerId, name: String) -> QueryState {
+    CONNECTED
+        .write()
+        .expect("CONNECTED lock poisoned")
+        .insert(player_id);
+    debug!(player_id = %player_id, name = %name, "player connected");
+
     RUNTIME.spawn(async move {
-        let outcome = run_upsert_player(player_id, name).await;
-        if let Err(e) = ctx.callback_data("skua:database", "upsert_player", outcome) {
-            error!(error = ?e, "failed to dispatch database:upsert_player callback");
+        let client = match get_client().await {
+            Ok(c) => c,
+            Err(e) => {
+                let outcome: QueryOutcome<String> =
+                    QueryOutcome::Failed(transient_query_error("Failed to get database client", e));
+                if let Err(e) = ctx.callback_data("skua:database", "player_connect", outcome) {
+                    error!(error = ?e, "failed to dispatch database:player_connect callback");
+                }
+                return;
+            }
+        };
+
+        let upsert_outcome: QueryOutcome<String> =
+            match upsert_player_inner(&client, player_id, &name).await {
+                Ok(info) => match serde_json::to_string(&info) {
+                    Ok(json) => QueryOutcome::Done(json),
+                    Err(e) => QueryOutcome::Failed(transient_query_error(
+                        "Failed to serialize player_info",
+                        e,
+                    )),
+                },
+                Err(err) => QueryOutcome::Failed(err),
+            };
+
+        let upsert_ok = matches!(upsert_outcome, QueryOutcome::Done(_));
+        if let Err(e) = ctx.callback_data("skua:database", "player_connect", upsert_outcome) {
+            error!(error = ?e, "failed to dispatch database:player_connect callback");
+        }
+
+        // Skip cert replay if the upsert failed — SQF will retry the whole
+        // connect when the transient failure clears.
+        if upsert_ok {
+            let cert_ids = crate::certification::push_player_certs(&ctx, &client, player_id).await;
+            // Seed the watchdog snapshot so the next periodic tick has the
+            // correct baseline; without this, the first tick would re-fire
+            // grants for every cert the player already received above.
+            crate::sync::watchdog::seed_player(player_id, cert_ids);
         }
     });
+
     QueryState::Processing
 }
 
-async fn run_upsert_player(player_id: PlayerId, name: String) -> QueryOutcome<String> {
-    let client = match get_client().await {
-        Ok(c) => c,
-        Err(e) => {
-            return QueryOutcome::Failed(transient_query_error("Failed to get database client", e));
-        }
-    };
-    match upsert_player_inner(&client, player_id, &name).await {
-        Ok(info) => match serde_json::to_string(&info) {
-            Ok(json) => QueryOutcome::Done(json),
-            Err(e) => {
-                QueryOutcome::Failed(transient_query_error("Failed to serialize player_info", e))
-            }
-        },
-        Err(err) => QueryOutcome::Failed(err),
-    }
+#[allow(clippy::needless_pass_by_value)] // (Arma commands must take owned args.)
+pub fn player_disconnect(player_id: PlayerId, name: String) -> QueryState {
+    let removed = CONNECTED
+        .write()
+        .expect("CONNECTED lock poisoned")
+        .remove(&player_id);
+    crate::sync::watchdog::clear_player(player_id);
+    debug!(player_id = %player_id, name = %name, removed, "player disconnected");
+    QueryState::Done
 }
 
 #[instrument(level = "debug", name = "database_upsert_player", skip(client), fields(player_id = %player_id))]

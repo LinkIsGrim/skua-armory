@@ -34,17 +34,21 @@ GVAR(list) = fromJSON _return; // Store certs in global variable
 } forEach GVAR(list);
 INFO("Certification list updated successfully.");
 
-if (!GVAR(loaded)) then {
-    [QGVAR(loaded)] call CBA_fnc_globalEventJIP;
-};
-
-if (GVAR(loaded)) exitWith {}; // If certs already loaded, no need to run post-load code again
+// Bootstrap-retry re-pushes hit this path; GVAR(map) is refreshed above, but
+// the loaded event + pending-event flush are first-time-only.
+if (GVAR(loaded)) exitWith {};
 
 GVAR(loaded) = true;
-INFO_1("Executing post-load code for certifications. %1 callbacks to run.",count GVAR(postLoadCode));
+
+INFO_1("Flushing %1 pending cert event(s) queued before cert list arrived.",count GVAR(pendingCertEvents));
 {
-    private _code = _x select 0;
-    private _args = _x select 1;
-    _args call _code;
-} forEach GVAR(postLoadCode);
-GVAR(postLoadCode) = []; // Clear post-load code after running
+    _x params ["_type", "_playerID", "_certID"];
+    switch (_type) do {
+        case "grant": { [_playerID, _certID] call FUNC(processGrant); };
+        case "revoke": { [_playerID, _certID] call FUNC(processRevoke); };
+        default { ERROR_1("Unknown pending cert event type: %1",_type); };
+    };
+} forEach GVAR(pendingCertEvents);
+GVAR(pendingCertEvents) = [];
+
+[QGVAR(loaded)] call CBA_fnc_globalEventJIP;

@@ -26,6 +26,11 @@ if (isServer) then {
 
     [QEGVAR(common,clientConnected), LINKFUNC(onClientConnected)] call CBA_fnc_addEventHandler;
 
+    addMissionEventHandler ["HandleDisconnect", {
+        params ["", "", "_uid", "_name"];
+        [_uid, _name] call FUNC(playerDisconnect);
+    }];
+
     // Flush queued code when bootstrap finishes. fnc_runAfterDatabaseInit
     // pushes [code, args] pairs into postLoadCode until state is CONNECTEDINIT.
     [QGVAR(initialized), {

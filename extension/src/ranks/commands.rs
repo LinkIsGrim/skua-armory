@@ -27,24 +27,34 @@ pub fn group() -> Group {
 
 fn list(ctx: Context) -> QueryState {
     RUNTIME.spawn(async move {
-        let outcome = run_list().await;
-        if let Err(e) = ctx.callback_data("skua:ranks", "list", outcome) {
-            error!(error = ?e, "failed to dispatch ranks:list callback");
-        }
+        let client = match get_client().await {
+            Ok(c) => c,
+            Err(e) => {
+                let outcome: QueryOutcome<Vec<Rank>> =
+                    QueryOutcome::Failed(transient_query_error("Failed to get database client", e));
+                if let Err(e) = ctx.callback_data("skua:ranks", "list", outcome) {
+                    error!(error = ?e, "failed to dispatch ranks:list callback");
+                }
+                return;
+            }
+        };
+        push_list(&ctx, &client).await;
     });
     QueryState::Processing
 }
 
-async fn run_list() -> QueryOutcome<Vec<Rank>> {
-    let client = match get_client().await {
-        Ok(c) => c,
-        Err(e) => {
-            return QueryOutcome::Failed(transient_query_error("Failed to get database client", e));
-        }
-    };
-    match list_inner(&client).await {
+/// Queries the ranks table and fires `skua:ranks/list` with the rank vector
+/// (or a transient failure on query error).
+///
+/// Reused by [`crate::sync::push_post_bootstrap`] so the same dispatch path
+/// serves both ad-hoc SQF requests and post-bootstrap pushes.
+pub(crate) async fn push_list(ctx: &Context, client: &Client) {
+    let outcome: QueryOutcome<Vec<Rank>> = match list_inner(client).await {
         Ok(rows) => QueryOutcome::Done(rows),
         Err(err) => QueryOutcome::Failed(err),
+    };
+    if let Err(e) = ctx.callback_data("skua:ranks", "list", outcome) {
+        error!(error = ?e, "failed to dispatch ranks:list callback");
     }
 }
 

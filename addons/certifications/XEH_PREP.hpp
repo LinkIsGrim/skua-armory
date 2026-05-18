@@ -1,6 +1,6 @@
 PREP(extCallback);
-PREP(loadPlayerCerts);
 PREP(onCertificationListReturn);
 PREP(onGrantReturn);
-PREP(runAfterCertsLoaded);
-PREP(updateCerts);
+PREP(onRevokeReturn);
+PREP(processGrant);
+PREP(processRevoke);

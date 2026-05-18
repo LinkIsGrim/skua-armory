@@ -18,7 +18,7 @@ mod wire_format {
         }
     }
 
-    /// `run_list` serializes `Vec<Certification>` to JSON; SQF parses with
+    /// `push_list` serializes `Vec<Certification>` to JSON; SQF parses with
     /// `fromJSON`. Lock the field names + shape so a struct rename can't
     /// silently break SQF callers.
     #[test]
@@ -60,8 +60,9 @@ mod wire_format {
         );
     }
 
-    /// `grant` / `load_player` callbacks ship a `{player_id, cert_id}` JSON
-    /// object consumed by `fnc_onGrantReturn`. Lock the key names + types
+    /// `grant` callbacks (both ad-hoc grants and `push_player_certs` replays)
+    /// ship a `{player_id, cert_id}` JSON object consumed by
+    /// `fnc_onGrantReturn`. Lock the key names + types
     /// (`player_id` must be a string so `BIS_fnc_getUnitByUID` is happy) by
     /// serializing the actual prod struct — a rename in `PlayerCertEvent`
     /// then immediately fails this test.
