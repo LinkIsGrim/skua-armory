@@ -1,11 +1,12 @@
 ["skua_cert_revoke_medic", {
     params ["_unit"];
 
-    private _currentLevel = _unit getVariable ["ace_medical_medicClass", 0];
-    if (_currentLevel == 1) then {
-        _unit setVariable ["ace_medical_medicClass", 0, true];
-    } else {
-        INFO_1("Unit %1 does not have medic certification level 1, skipping revoke",name _unit);
-        _unit setVariable ["ace_medical_medicClass", _currentLevel, true]; // Ensure variable is set globally
+    private _isDoctor = _unit getVariable [QGVAR(doctor), false];
+    if (_isDoctor) exitWith {
+        INFO_1("Unit %1 has doctor certification, skipping revoke of medic certification. Revoke doctor first. Good luck with that.",name _unit);
     };
+
+    _unit setVariable [QGVAR(medic), false, true];
+
+    _unit setVariable ["ace_medical_medicClass", 0, true]; // Reset medic class to 0 on revoke
 }] call CBA_fnc_addEventHandler;
