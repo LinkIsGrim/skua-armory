@@ -1,4 +1,4 @@
-name: Bump Version
+name: Bump
 
 # Manually bumps addons/main/script_version.hpp and pushes the commit to master.
 # The push triggers version-bump.yml, which validates, runs CI, tags, and releases.
