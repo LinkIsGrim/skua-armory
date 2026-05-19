@@ -9,6 +9,7 @@ on:
     - 'extension/**'
     - 'addons/main/script_macros_enums.hpp'
     - '.github/workflows/extension.yml'
+  workflow_call:
 
 jobs:
   format:

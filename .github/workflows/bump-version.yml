@@ -1,0 +1,106 @@
+name: Bump Version
+
+# Manually bumps addons/main/script_version.hpp and pushes the commit to master.
+# The push triggers version-bump.yml, which validates, runs CI, tags, and releases.
+#
+# Prerequisite: the GitHub Actions bot must be on the bypass list of the master
+# ruleset (or the equivalent classic branch protection setting) so this push is
+# allowed.
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Bump type (ignored if `version` is provided)'
+        type: choice
+        required: true
+        default: patch
+        options:
+        - major
+        - minor
+        - patch
+      version:
+        description: 'Explicit X.Y.Z to set (overrides `bump`)'
+        type: string
+        required: false
+        default: ''
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - name: Mint app token
+      id: app-token
+      uses: actions/create-github-app-token@v1
+      with:
+        app-id: ${{ secrets.APP_ID }}
+        private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+    - name: Checkout master
+      uses: actions/checkout@v6
+      with:
+        ref: master
+        token: ${{ steps.app-token.outputs.token }}
+
+    - name: Compute and write new version
+      id: compute
+      env:
+        BUMP: ${{ inputs.bump }}
+        VERSION_OVERRIDE: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+
+        FILE=addons/main/script_version.hpp
+        OM=$(grep -oP '^#define MAJOR \K\d+' "$FILE")
+        Om=$(grep -oP '^#define MINOR \K\d+' "$FILE")
+        Op=$(grep -oP '^#define PATCHLVL \K\d+' "$FILE")
+        OB=$(grep -oP '^#define BUILD \K\d+' "$FILE")
+
+        if [[ -n "$VERSION_OVERRIDE" ]]; then
+          if [[ ! "$VERSION_OVERRIDE" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "::error::version override must match X.Y.Z (got '${VERSION_OVERRIDE}')"
+            exit 1
+          fi
+          NM="${BASH_REMATCH[1]}"
+          Nm="${BASH_REMATCH[2]}"
+          Np="${BASH_REMATCH[3]}"
+        else
+          case "$BUMP" in
+            major) NM=$((OM + 1)); Nm=0; Np=0 ;;
+            minor) NM=$OM; Nm=$((Om + 1)); Np=0 ;;
+            patch) NM=$OM; Nm=$Om; Np=$((Op + 1)) ;;
+            *) echo "::error::unknown bump type '${BUMP}'"; exit 1 ;;
+          esac
+        fi
+        NB=$((OB + 1))
+
+        new_tuple=$(printf '%05d%05d%05d' "$NM" "$Nm" "$Np")
+        old_tuple=$(printf '%05d%05d%05d' "$OM" "$Om" "$Op")
+        if [[ ! "$new_tuple" > "$old_tuple" ]]; then
+          echo "::error::Computed version ${NM}.${Nm}.${Np} is not greater than ${OM}.${Om}.${Op}"
+          exit 1
+        fi
+
+        echo "Previous: ${OM}.${Om}.${Op}.${OB}"
+        echo "New:      ${NM}.${Nm}.${Np}.${NB}"
+
+        sed -i \
+          -e "s/^#define MAJOR .*/#define MAJOR ${NM}/" \
+          -e "s/^#define MINOR .*/#define MINOR ${Nm}/" \
+          -e "s/^#define PATCHLVL .*/#define PATCHLVL ${Np}/" \
+          -e "s/^#define BUILD .*/#define BUILD ${NB}/" \
+          "$FILE"
+
+        echo "full=${NM}.${Nm}.${Np}.${NB}" >> "$GITHUB_OUTPUT"
+
+    - name: Commit and push
+      env:
+        FULL: ${{ steps.compute.outputs.full }}
+      run: |
+        git config user.name 'github-actions[bot]'
+        git config user.email 'github-actions[bot]@users.noreply.github.com'
+        git add addons/main/script_version.hpp
+        git commit -m "chore: prepare build ${FULL}"
+        git push origin master
