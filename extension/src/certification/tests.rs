@@ -60,21 +60,21 @@ mod wire_format {
         );
     }
 
-    /// `grant` callbacks (both ad-hoc grants and `push_player_certs` replays)
-    /// ship a `{player_id, cert_id}` JSON object consumed by
-    /// `fnc_onGrantReturn`. Lock the key names + types
-    /// (`player_id` must be a string so `BIS_fnc_getUnitByUID` is happy) by
-    /// serializing the actual prod struct — a rename in `PlayerCertEvent`
-    /// then immediately fails this test.
+    /// `CertificationGranted` events (both ad-hoc grants and `push_player_certs`
+    /// replays and watchdog-detected drift) ship a `{player_id, cert_id}` JSON
+    /// object consumed by `fnc_onCertificationGranted`. Lock the key names +
+    /// types (`player_id` must be a string so `BIS_fnc_getUnitByUID` is happy)
+    /// by serializing through the actual `Event` payload path.
     #[test]
     fn grant_event_payload_shape() {
-        use super::super::commands::PlayerCertEvent;
         use crate::domain::PlayerId;
+        use crate::event::Event;
 
-        let json = serde_json::to_string(&PlayerCertEvent {
+        let json = Event::CertificationGranted {
             player_id: PlayerId::new(76_561_198_000_000_000),
-            cert_id: "pilot",
-        })
+            cert_id: "pilot".into(),
+        }
+        .payload()
         .expect("serialize");
         let parsed: serde_json::Value = serde_json::from_str(&json).expect("parse back");
         let obj = parsed.as_object().expect("object");
@@ -201,41 +201,11 @@ mod file_parsing {
 
 #[cfg(test)]
 mod db_tests {
-    use deadpool_postgres::{Manager, Pool};
-    use testcontainers_modules::postgres::Postgres;
-    use testcontainers_modules::testcontainers::ContainerAsync;
-    use testcontainers_modules::testcontainers::ImageExt;
-    use testcontainers_modules::testcontainers::runners::AsyncRunner;
-    use tokio_postgres::{Config, NoTls};
-
     use super::super::commands::{get_player_inner, grant_inner, list_inner, revoke_inner};
     use super::super::migration::apply_migration;
     use super::super::types::CertificationFile;
-    use crate::database::bootstrap_schema;
+    use crate::database::{bootstrap_schema, start_test_db};
     use crate::domain::PlayerId;
-
-    async fn start_pg() -> (ContainerAsync<Postgres>, Pool) {
-        let container = Postgres::default()
-            .with_tag("18-alpine")
-            .start()
-            .await
-            .expect("failed to start postgres container");
-        let host = container.get_host().await.unwrap();
-        let port = container.get_host_port_ipv4(5432).await.unwrap();
-
-        let mut cfg = Config::new();
-        cfg.host(host.to_string());
-        cfg.port(port);
-        cfg.user("postgres");
-        cfg.password("postgres");
-        cfg.dbname("postgres");
-        let manager = Manager::new(cfg, NoTls);
-        let pool = Pool::builder(manager)
-            .max_size(4)
-            .build()
-            .expect("failed to build test pool");
-        (container, pool)
-    }
 
     fn cert(id: &str, display: &str) -> (String, CertificationFile) {
         (
@@ -257,8 +227,8 @@ mod db_tests {
 
     #[tokio::test]
     async fn apply_migration_empty_set_creates_no_rows() {
-        let (_c, pool) = start_pg().await;
-        let client = pool.get().await.unwrap();
+        let (_c, db) = start_test_db().await;
+        let client = db.get_conn().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
 
         apply_migration(&client, vec![]).await.expect("apply empty");
@@ -290,8 +260,8 @@ mod db_tests {
 
     #[tokio::test]
     async fn apply_migration_upserts_rows() {
-        let (_c, pool) = start_pg().await;
-        let client = pool.get().await.unwrap();
+        let (_c, db) = start_test_db().await;
+        let client = db.get_conn().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
 
         let files = vec![cert("pilot", "Pilot"), cert("medic", "Medic")];
@@ -308,8 +278,8 @@ mod db_tests {
 
     #[tokio::test]
     async fn apply_migration_updates_existing_row_on_repeat() {
-        let (_c, pool) = start_pg().await;
-        let client = pool.get().await.unwrap();
+        let (_c, db) = start_test_db().await;
+        let client = db.get_conn().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
 
         apply_migration(&client, vec![cert("pilot", "Pilot")])
@@ -329,8 +299,8 @@ mod db_tests {
 
     #[tokio::test]
     async fn apply_migration_deletes_row_without_file() {
-        let (_c, pool) = start_pg().await;
-        let client = pool.get().await.unwrap();
+        let (_c, db) = start_test_db().await;
+        let client = db.get_conn().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
 
         apply_migration(
@@ -364,8 +334,8 @@ mod db_tests {
 
     #[tokio::test]
     async fn apply_migration_preserves_in_game_addition() {
-        let (_c, pool) = start_pg().await;
-        let client = pool.get().await.unwrap();
+        let (_c, db) = start_test_db().await;
+        let client = db.get_conn().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
 
         apply_migration(&client, vec![cert("pilot", "Pilot")])
@@ -404,8 +374,8 @@ mod db_tests {
 
     #[tokio::test]
     async fn list_inner_empty_returns_empty_vec() {
-        let (_c, pool) = start_pg().await;
-        let client = pool.get().await.unwrap();
+        let (_c, db) = start_test_db().await;
+        let client = db.get_conn().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
 
         let rows = list_inner(&client).await.unwrap();
@@ -414,8 +384,8 @@ mod db_tests {
 
     #[tokio::test]
     async fn list_inner_returns_seeded_certs() {
-        let (_c, pool) = start_pg().await;
-        let client = pool.get().await.unwrap();
+        let (_c, db) = start_test_db().await;
+        let client = db.get_conn().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
         apply_migration(
             &client,
@@ -435,8 +405,8 @@ mod db_tests {
 
     #[tokio::test]
     async fn grant_inner_autocreates_player_and_inserts_cert() {
-        let (_c, pool) = start_pg().await;
-        let mut client = pool.get().await.unwrap();
+        let (_c, db) = start_test_db().await;
+        let mut client = db.get_conn().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
         apply_migration(&client, vec![cert("pilot", "Pilot")])
             .await
@@ -473,8 +443,8 @@ mod db_tests {
 
     #[tokio::test]
     async fn grant_inner_duplicate_is_noop() {
-        let (_c, pool) = start_pg().await;
-        let mut client = pool.get().await.unwrap();
+        let (_c, db) = start_test_db().await;
+        let mut client = db.get_conn().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
         apply_migration(&client, vec![cert("pilot", "Pilot")])
             .await
@@ -501,8 +471,8 @@ mod db_tests {
 
     #[tokio::test]
     async fn grant_inner_unknown_cert_fails() {
-        let (_c, pool) = start_pg().await;
-        let mut client = pool.get().await.unwrap();
+        let (_c, db) = start_test_db().await;
+        let mut client = db.get_conn().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
         // No certs migrated — the FK on player_certs.cert_id will violate.
 
@@ -516,8 +486,8 @@ mod db_tests {
 
     #[tokio::test]
     async fn get_player_inner_returns_granted_ids() {
-        let (_c, pool) = start_pg().await;
-        let mut client = pool.get().await.unwrap();
+        let (_c, db) = start_test_db().await;
+        let mut client = db.get_conn().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
         apply_migration(
             &client,
@@ -536,8 +506,8 @@ mod db_tests {
 
     #[tokio::test]
     async fn get_player_inner_empty_for_unknown_player() {
-        let (_c, pool) = start_pg().await;
-        let client = pool.get().await.unwrap();
+        let (_c, db) = start_test_db().await;
+        let client = db.get_conn().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
 
         let ids = get_player_inner(&client, PlayerId::new(404)).await.unwrap();
@@ -546,8 +516,8 @@ mod db_tests {
 
     #[tokio::test]
     async fn revoke_inner_removes_row() {
-        let (_c, pool) = start_pg().await;
-        let mut client = pool.get().await.unwrap();
+        let (_c, db) = start_test_db().await;
+        let mut client = db.get_conn().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
         apply_migration(&client, vec![cert("pilot", "Pilot")])
             .await
@@ -563,8 +533,8 @@ mod db_tests {
 
     #[tokio::test]
     async fn revoke_inner_unknown_grant_is_noop() {
-        let (_c, pool) = start_pg().await;
-        let client = pool.get().await.unwrap();
+        let (_c, db) = start_test_db().await;
+        let client = db.get_conn().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
         apply_migration(&client, vec![cert("pilot", "Pilot")])
             .await

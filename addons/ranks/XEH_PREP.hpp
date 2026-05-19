@@ -1,2 +1,2 @@
-PREP(extCallback);
-PREP(onRanksListReturn);
+PREP(onRankChanged);
+PREP(onRanksListChanged);

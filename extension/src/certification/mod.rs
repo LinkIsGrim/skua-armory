@@ -11,8 +11,6 @@ mod types;
 
 #[cfg(test)]
 mod tests;
-#[cfg(test)]
-pub(crate) use types::Certification; // For watchdog tests
 
 pub use commands::group;
 pub(crate) use commands::{
@@ -20,3 +18,4 @@ pub(crate) use commands::{
     push_player_certs,
 };
 pub(crate) use migration::migrate;
+pub(crate) use types::Certification;

@@ -1,18 +1,20 @@
 //! Arma-callable certification commands.
 //!
-//! Each command returns `Processing` synchronously and fires a callback on
-//! `skua:certification / <function>` with a [`QueryOutcome`]:
+//! `list` and `get_player` fire a callback on `skua:certification/<function>`
+//! with a [`QueryOutcome`]:
 //! - `[Done, payload]` on success — payload shape per command, JSON-encoded
 //!   so SQF can `fromJSON` it.
 //! - `[TransientFailure, error]` on failure.
 //!
-//! `grant` and `revoke` both ship a [`PlayerCertEvent`] payload (`player_id` +
-//! `cert_id`). Same shape is reused by `push_player_certs` (cert hydration on
-//! `player_connect`) and the live-load watchdog so SQF has one handler per
-//! direction regardless of source.
+//! `grant` and `revoke` emit state-change events via [`crate::event::emit`] on
+//! success (`Event::CertificationGranted` / `Event::CertificationRevoked`).
+//! The same emit path is used by `push_player_certs` (cert hydration on
+//! `player_connect`) and the live-load watchdog, so SQF subscribers have a
+//! single source for "this cert was granted/revoked" regardless of trigger.
+//! On failure, `grant` / `revoke` still fire a `skua:certification/<function>`
+//! callback so callers can distinguish a failed request from a no-op.
 
 use arma_rs::{Context, Group};
-use serde::Serialize;
 use tokio_postgres::Client;
 use tracing::{error, instrument};
 
@@ -21,15 +23,7 @@ use crate::core::RUNTIME;
 use crate::database::get_client;
 use crate::domain::PlayerId;
 use crate::error::{QueryError, QueryOutcome, QueryState, transient_query_error};
-
-/// JSON payload for `grant` / `revoke` callbacks. Field names match what
-/// `addons/certifications/functions/fnc_onGrantReturn.sqf` (and the parallel
-/// revoke handler) read.
-#[derive(Serialize)]
-pub(super) struct PlayerCertEvent<'a> {
-    pub(super) player_id: PlayerId,
-    pub(super) cert_id: &'a str,
-}
+use crate::event::{self, Event};
 
 pub fn group() -> Group {
     Group::new()
@@ -41,32 +35,30 @@ pub fn group() -> Group {
 
 // -- callback dispatch helpers --
 
-/// Fires a `skua:certification/grant` callback with the `[player_id, cert_id]`
-/// payload SQF expects. Reused by the Arma `grant` command, `push_player_certs`
-/// (on `player_connect`), and the watchdog (on live grant detection).
+/// Emits [`Event::CertificationGranted`] on the unified event channel. Reused
+/// by the Arma `grant` command, `push_player_certs` (on `player_connect`), and
+/// the watchdog (on live grant detection) — one canonical emit site means
+/// command and watchdog paths cannot drift in the wire shape they produce.
 pub(crate) fn dispatch_grant_event(ctx: &Context, player_id: PlayerId, cert_id: &str) {
-    dispatch_cert_event(ctx, "grant", player_id, cert_id);
+    event::emit(
+        ctx,
+        &Event::CertificationGranted {
+            player_id,
+            cert_id: cert_id.to_owned(),
+        },
+    );
 }
 
-/// Fires a `skua:certification/revoke` callback with the `[player_id, cert_id]`
-/// payload SQF expects. Reused by the Arma `revoke` command and the watchdog
-/// (on live revoke detection).
+/// Emits [`Event::CertificationRevoked`] on the unified event channel. Reused
+/// by the Arma `revoke` command and the watchdog (on live revoke detection).
 pub(crate) fn dispatch_revoke_event(ctx: &Context, player_id: PlayerId, cert_id: &str) {
-    dispatch_cert_event(ctx, "revoke", player_id, cert_id);
-}
-
-fn dispatch_cert_event(ctx: &Context, function: &'static str, player_id: PlayerId, cert_id: &str) {
-    let payload = match serde_json::to_string(&PlayerCertEvent { player_id, cert_id }) {
-        Ok(p) => p,
-        Err(e) => {
-            error!(error = ?e, function, %cert_id, "failed to serialize cert event");
-            return;
-        }
-    };
-    let outcome: QueryOutcome<String> = QueryOutcome::Done(payload);
-    if let Err(e) = ctx.callback_data("skua:certification", function, outcome) {
-        error!(error = ?e, function, %cert_id, "failed to dispatch cert event callback");
-    }
+    event::emit(
+        ctx,
+        &Event::CertificationRevoked {
+            player_id,
+            cert_id: cert_id.to_owned(),
+        },
+    );
 }
 
 fn dispatch_failure(ctx: &Context, function: &'static str, err: QueryError) {
@@ -83,11 +75,7 @@ fn list(ctx: Context) -> QueryState {
         let client = match get_client().await {
             Ok(c) => c,
             Err(e) => {
-                let outcome: QueryOutcome<String> =
-                    QueryOutcome::Failed(transient_query_error("Failed to get database client", e));
-                if let Err(e) = ctx.callback_data("skua:certification", "list", outcome) {
-                    error!(error = ?e, "failed to dispatch certification:list callback");
-                }
+                error!(error = ?e, "certification:list failed to get database client");
                 return;
             }
         };
@@ -96,24 +84,18 @@ fn list(ctx: Context) -> QueryState {
     QueryState::Processing
 }
 
-/// Queries the certification table and fires `skua:certification/list` with
-/// the JSON-encoded list (or a transient failure on query/serialize error).
+/// Queries the certification table and emits [`Event::CertificationListChanged`]
+/// with the full list. Reused by [`crate::sync::push_post_bootstrap`] (one-shot
+/// push after bootstrap) and [`crate::sync::watchdog`] (when the live-load
+/// hash diff detects definition changes) — all three trigger paths emit the
+/// same event so SQF subscribers don't have to distinguish.
 ///
-/// Reused by [`crate::sync::push_post_bootstrap`] so the same dispatch path
-/// serves both ad-hoc SQF requests and post-bootstrap pushes.
+/// Query failures log and drop. The watchdog will retry on its next tick;
+/// post-bootstrap retries happen via the bootstrap pipeline.
 pub(crate) async fn push_list(ctx: &Context, client: &Client) {
-    let outcome: QueryOutcome<String> = match list_inner(client).await {
-        Ok(rows) => match serde_json::to_string(&rows) {
-            Ok(json) => QueryOutcome::Done(json),
-            Err(e) => QueryOutcome::Failed(transient_query_error(
-                "Failed to serialize certifications",
-                e,
-            )),
-        },
-        Err(err) => QueryOutcome::Failed(err),
-    };
-    if let Err(e) = ctx.callback_data("skua:certification", "list", outcome) {
-        error!(error = ?e, "failed to dispatch certification:list callback");
+    match list_inner(client).await {
+        Ok(rows) => event::emit(ctx, &Event::CertificationListChanged { certs: rows }),
+        Err(err) => error!(error = %err, "failed to query certifications for push"),
     }
 }
 
@@ -295,9 +277,9 @@ pub(super) async fn revoke_inner(
 // -- push_player_certs --
 //
 // Re-emits the DB's stored grants for a player as a stream of
-// `skua:certification / grant` callbacks, one per cert. SQF's
-// `fnc_onGrantReturn` then re-runs each cert's CBA event for the player. No
-// DB writes — this is "replay what's stored". Used by
+// `Event::CertificationGranted` events, one per cert. SQF's
+// `fnc_onCertificationGranted` then re-runs each cert's CBA event for the
+// player. No DB writes — this is "replay what's stored". Used by
 // `database:player_connect` to hydrate a player's certs on join.
 //
 // Returns the cert id list so the caller can seed the watchdog state map
@@ -305,8 +287,8 @@ pub(super) async fn revoke_inner(
 //
 // Caller provides the `tokio_postgres::Client` so the same connection used for
 // the surrounding upsert can be reused. On query failure, a single failure
-// callback fires on the `grant` channel so the existing SQF error branch picks
-// it up; an empty list is returned.
+// callback fires on the legacy `skua:certification/grant` channel (caller-ack
+// for the rare error case); an empty list is returned.
 
 #[instrument(level = "debug", name = "certification_push_player_certs", skip(ctx, client), fields(player_id = %player_id))]
 pub(crate) async fn push_player_certs(

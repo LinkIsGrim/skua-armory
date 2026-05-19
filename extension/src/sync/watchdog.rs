@@ -4,13 +4,18 @@
 //! - **Player cert diff**: Tracks a `PlayerId → {cert_id, ...}` snapshot of
 //!   what each online player should have in-game. Every
 //!   `SKUA_WATCHDOG_INTERVAL_SECS` (default 30) the tick queries the DB for
-//!   each connected player's current cert set, diffs against the snapshot, and
-//!   fires `skua:certification/grant` / `skua:certification/revoke` callbacks
-//!   for the differences.
+//!   each connected player's current cert set, diffs against the snapshot,
+//!   and emits [`crate::event::Event::CertificationGranted`] /
+//!   [`crate::event::Event::CertificationRevoked`] for the differences via
+//!   [`crate::certification::dispatch_grant_event`] /
+//!   [`crate::certification::dispatch_revoke_event`] — the same emit path used
+//!   by the `grant`/`revoke` commands themselves, so command and watchdog
+//!   paths produce identical wire events.
 //! - **Certifications list diff**: Tracks a snapshot of the certifications list
 //!   (by SHA256 hash of the JSON representation). Every tick, re-queries the
-//!   list, compares hashes, and pushes `skua:certification/list` to SQF if
-//!   cert definitions (additions, removals, modifications) are detected.
+//!   list, compares hashes, and emits
+//!   [`crate::event::Event::CertificationListChanged`] via
+//!   [`crate::certification::push_list`] if definitions changed.
 //!
 //! Seeding:
 //! - `database:player_connect` calls [`seed_player`] after `push_player_certs`

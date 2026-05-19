@@ -15,8 +15,3 @@
 #endif
 
 #include "\z\skua\addons\main\script_macros.hpp"
-
-#define DB_STATE_NO_CONNECTION 0
-#define DB_STATE_CONNECTING    1
-#define DB_STATE_CONNECTED     2
-#define DB_STATE_ERROR        -1

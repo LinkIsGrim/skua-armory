@@ -6,6 +6,7 @@ if (!isServer) exitWith {};
 if (!isMultiplayer) exitWith {};
 
 ["CBA_settingsInitialized", {
+    INFO("Database post-init event handler executing");
     GVAR(campaignKey) call FUNC(bootstrap);
 }] call CBA_fnc_addEventHandler;
 

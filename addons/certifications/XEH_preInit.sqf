@@ -15,13 +15,15 @@ if (isServer) then {
 
     // Grant/revoke callbacks that arrive before the static cert list has
     // loaded are queued here as `[event_type, _playerID, _certID]` triples;
-    // fnc_onCertificationListReturn flushes them once GVAR(map) is populated.
+    // fnc_onCertificationListChanged flushes them once GVAR(map) is populated.
     // The extension fires per-player grants as part of database:player_connect
     // and the watchdog may emit grants/revokes between bootstrap and the
     // cert-list push landing.
     GVAR(pendingCertEvents) = [];
 
-    addMissionEventHandler ["ExtensionCallback", LINKFUNC(extCallback)];
+    [QEV_CERTIFICATION_GRANTED, LINKFUNC(onCertificationGranted)] call CBA_fnc_addEventHandler;
+    [QEV_CERTIFICATION_REVOKED, LINKFUNC(onCertificationRevoked)] call CBA_fnc_addEventHandler;
+    [QEV_CERTIFICATION_LIST_CHANGED, LINKFUNC(onCertificationListChanged)] call CBA_fnc_addEventHandler;
 };
 
 ADDON = true;

@@ -1,11 +1,14 @@
 //! Rank value types.
 
 use arma_rs::IntoArma;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 /// Row shape returned by `ranks:list`. `id` matches `player_info.rank` (a
 /// `SMALLINT` FK into `ranks`).
-#[derive(Debug, Clone, PartialEq, Eq, IntoArma)]
+///
+/// `Serialize` is used by the event module so `RankListChanged` can ship a
+/// JSON-encoded list of ranks to SQF via `Event::payload`.
+#[derive(Debug, Clone, PartialEq, Eq, IntoArma, Serialize)]
 pub struct Rank {
     pub id: i16,
     pub display_name: String,

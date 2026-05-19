@@ -24,6 +24,8 @@ if (isServer) then {
 
     addMissionEventHandler ["ExtensionCallback", LINKFUNC(extCallback)];
 
+    [QEV_PLAYER_CONNECTED, LINKFUNC(onPlayerConnected)] call CBA_fnc_addEventHandler;
+    [QEV_PLAYER_DISCONNECTED, LINKFUNC(onPlayerDisconnected)] call CBA_fnc_addEventHandler;
     [QEGVAR(common,clientConnected), LINKFUNC(onClientConnected)] call CBA_fnc_addEventHandler;
 
     addMissionEventHandler ["HandleDisconnect", {

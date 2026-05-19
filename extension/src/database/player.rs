@@ -7,12 +7,20 @@
 //! bumps `last_seen`), and (3) replays the player's stored cert grants via
 //! [`crate::certification::push_player_certs`].
 //!
-//! The upsert result is delivered on `skua:database/player_connect` so SQF can
-//! attach the row to the player unit and fire `skua_database_playerReady`. The
-//! cert grants land on `skua:certification/grant`, one callback per cert.
+//! On success, emits [`crate::event::Event::PlayerConnected`] with the upserted
+//! `PlayerInfo`. This is a critical event ([`Event::is_critical`]) — `emit`
+//! retries the SQF callback on failure. The SQF side additionally runs a
+//! per-player timeout-retry on the original `callExtension` call to cover
+//! strand modes the Rust retry can't see (SQF handler crash, mission still
+//! parsing). The upsert is idempotent, so retries are no-op DB writes.
 //!
-//! `player_disconnect` is fire-and-forget: it just removes the player from
-//! `CONNECTED`. `last_seen` is bumped on the next connect's upsert.
+//! Cert hydration via [`crate::certification::push_player_certs`] emits its own
+//! [`crate::event::Event::CertificationGranted`] events independently — no
+//! ordering guarantee against `PlayerConnected`.
+//!
+//! `player_disconnect` emits [`crate::event::Event::PlayerDisconnected`] before
+//! removing the player from `CONNECTED`. `last_seen` is bumped on the next
+//! connect's upsert.
 
 use arma_rs::Context;
 use chrono::{DateTime, Utc};
@@ -23,12 +31,17 @@ use tracing::{debug, error, instrument};
 use crate::core::{CONNECTED, RUNTIME};
 use crate::database::get_client;
 use crate::domain::PlayerId;
-use crate::error::{QueryError, QueryOutcome, QueryState, transient_query_error};
+use crate::error::{QueryError, QueryState, transient_query_error};
+use crate::event::{self, Event};
 
 /// JSON payload mirroring `skua_master.player_info`. Timestamps serialize as
 /// RFC3339 strings (chrono's default Serialize impl).
-#[derive(Debug, Serialize, PartialEq, Eq)]
-pub(super) struct PlayerInfo {
+///
+/// `Clone` is required so the event bus can carry `PlayerInfo` to internal
+/// Rust subscribers; `pub` so the event module can name it in
+/// [`crate::event::Event::PlayerConnected`] (which is itself `pub`).
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct PlayerInfo {
     pub steam_id: PlayerId,
     pub name: String,
     pub first_seen: DateTime<Utc>,
@@ -50,53 +63,44 @@ pub fn player_connect(ctx: Context, player_id: PlayerId, name: String) -> QueryS
         let client = match get_client().await {
             Ok(c) => c,
             Err(e) => {
-                let outcome: QueryOutcome<String> =
-                    QueryOutcome::Failed(transient_query_error("Failed to get database client", e));
-                if let Err(e) = ctx.callback_data("skua:database", "player_connect", outcome) {
-                    error!(error = ?e, "failed to dispatch database:player_connect callback");
-                }
+                error!(error = ?e, %player_id, "player_connect: failed to get database client");
                 return;
             }
         };
 
-        let upsert_outcome: QueryOutcome<String> =
-            match upsert_player_inner(&client, player_id, &name).await {
-                Ok(info) => match serde_json::to_string(&info) {
-                    Ok(json) => QueryOutcome::Done(json),
-                    Err(e) => QueryOutcome::Failed(transient_query_error(
-                        "Failed to serialize player_info",
-                        e,
-                    )),
-                },
-                Err(err) => QueryOutcome::Failed(err),
-            };
+        let info = match upsert_player_inner(&client, player_id, &name).await {
+            Ok(info) => info,
+            Err(err) => {
+                error!(%err, %player_id, "player_connect: upsert failed");
+                return;
+            }
+        };
 
-        let upsert_ok = matches!(upsert_outcome, QueryOutcome::Done(_));
-        if let Err(e) = ctx.callback_data("skua:database", "player_connect", upsert_outcome) {
-            error!(error = ?e, "failed to dispatch database:player_connect callback");
-        }
+        event::emit(&ctx, &Event::PlayerConnected { info });
 
-        // Skip cert replay if the upsert failed — SQF will retry the whole
-        // connect when the transient failure clears.
-        if upsert_ok {
-            let cert_ids = crate::certification::push_player_certs(&ctx, &client, player_id).await;
-            // Seed the watchdog snapshot so the next periodic tick has the
-            // correct baseline; without this, the first tick would re-fire
-            // grants for every cert the player already received above.
-            crate::sync::watchdog::seed_player(player_id, cert_ids);
-        }
+        // Cert hydration replays grants the player already owns via
+        // Event::CertificationGranted. No ordering guarantee against
+        // PlayerConnected — both flow on the same event channel and SQF
+        // handlers must tolerate either order (see fnc_onCertificationGranted's
+        // pendingCertEvents queue).
+        let cert_ids = crate::certification::push_player_certs(&ctx, &client, player_id).await;
+        // Seed the watchdog snapshot so the next periodic tick has the correct
+        // baseline; without this, the first tick would re-fire grants for
+        // every cert the player already received above.
+        crate::sync::watchdog::seed_player(player_id, cert_ids);
     });
 
     QueryState::Processing
 }
 
 #[allow(clippy::needless_pass_by_value)] // (Arma commands must take owned args.)
-pub fn player_disconnect(player_id: PlayerId, name: String) -> QueryState {
+pub fn player_disconnect(ctx: Context, player_id: PlayerId, name: String) -> QueryState {
     let removed = CONNECTED
         .write()
         .expect("CONNECTED lock poisoned")
         .remove(&player_id);
     crate::sync::watchdog::clear_player(player_id);
+    event::emit(&ctx, &Event::PlayerDisconnected { player_id });
     debug!(player_id = %player_id, name = %name, removed, "player disconnected");
     QueryState::Done
 }
