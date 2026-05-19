@@ -1,0 +1,106 @@
+name: Version Bump
+
+on:
+  push:
+    branches:
+    - master
+    paths:
+    - 'addons/main/script_version.hpp'
+
+jobs:
+  validate-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.parse.outputs.version }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+      with:
+        fetch-depth: 2
+
+    - name: Validate version bump
+      id: parse
+      run: |
+        set -euo pipefail
+
+        parse() {
+          local content="$1"
+          local major minor patch build
+          major=$(printf '%s\n' "$content" | grep -oP '^#define MAJOR \K\d+')
+          minor=$(printf '%s\n' "$content" | grep -oP '^#define MINOR \K\d+')
+          patch=$(printf '%s\n' "$content" | grep -oP '^#define PATCHLVL \K\d+')
+          build=$(printf '%s\n' "$content" | grep -oP '^#define BUILD \K\d+')
+          if [[ -z "$major" || -z "$minor" || -z "$patch" || -z "$build" ]]; then
+            echo "Failed to parse version fields" >&2
+            exit 1
+          fi
+          echo "$major $minor $patch $build"
+        }
+
+        new_content=$(cat addons/main/script_version.hpp)
+        read -r NM Nm Np NB <<< "$(parse "$new_content")"
+
+        if old_content=$(git show HEAD~1:addons/main/script_version.hpp 2>/dev/null); then
+          read -r OM Om Op OB <<< "$(parse "$old_content")"
+        else
+          echo "No previous script_version.hpp at HEAD~1; treating as initial bump"
+          OM=0; Om=0; Op=0; OB=$((NB - 1))
+        fi
+
+        echo "Previous: ${OM}.${Om}.${Op}.${OB}"
+        echo "New:      ${NM}.${Nm}.${Np}.${NB}"
+
+        new_tuple=$(printf '%05d%05d%05d' "$NM" "$Nm" "$Np")
+        old_tuple=$(printf '%05d%05d%05d' "$OM" "$Om" "$Op")
+        if [[ ! "$new_tuple" > "$old_tuple" ]]; then
+          echo "::error::New version ${NM}.${Nm}.${Np} is not strictly greater than previous ${OM}.${Om}.${Op}"
+          exit 1
+        fi
+
+        if [[ "$NB" -ne $((OB + 1)) ]]; then
+          echo "::error::BUILD must be previous + 1 (expected $((OB + 1)), got ${NB})"
+          exit 1
+        fi
+
+        echo "version=${NM}.${Nm}.${Np}" >> "$GITHUB_OUTPUT"
+
+  arma:
+    needs: validate-version
+    uses: ./.github/workflows/arma.yml
+
+  debug-check:
+    needs: validate-version
+    uses: ./.github/workflows/debug-check.yml
+
+  extension:
+    needs: validate-version
+    uses: ./.github/workflows/extension.yml
+
+  tag-and-release:
+    needs: [validate-version, arma, debug-check, extension]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.validate-version.outputs.version }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+
+    - name: Configure git
+      run: |
+        git config user.name 'github-actions[bot]'
+        git config user.email 'github-actions[bot]@users.noreply.github.com'
+
+    - name: Create and push tag
+      run: |
+        git tag "v${VERSION}"
+        git push origin "v${VERSION}"
+
+    - name: Create GitHub Release
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release create "v${VERSION}" \
+          --title "v${VERSION}" \
+          --generate-notes
