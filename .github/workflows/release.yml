@@ -4,6 +4,15 @@ on:
   push:
     tags:
     - 'v*.*.*'
+  # Escape hatch: republish (or first-time publish) any existing tag without
+  # touching the tag itself. Useful when release.yml didn't fire on the
+  # original push.tags event for any reason.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to publish (e.g. v2.14.2)'
+        required: true
+        type: string
 
 jobs:
   release:
@@ -15,7 +24,9 @@ jobs:
         toolsUrl: ${{ secrets.ARMA3_TOOLS_URL }}
 
     - name: Checkout the source code
-      uses: actions/checkout@v1
+      uses: actions/checkout@v6
+      with:
+        ref: ${{ inputs.tag || github.ref }}
 
     - name: Setup Rust
       uses: dtolnay/rust-toolchain@stable
@@ -31,8 +42,17 @@ jobs:
     - name: Install cross
       run: cargo install cross --locked
 
+    # For push.tags GITHUB_REF is "refs/tags/v2.14.2" (strip 11 chars).
+    # For workflow_dispatch we read the input directly.
     - name: Set VERSION env
-      run: echo VERSION=${GITHUB_REF:11} >> $GITHUB_ENV
+      run: |
+        if [[ -n "${{ inputs.tag }}" ]]; then
+          echo "VERSION=${INPUT_TAG#v}" >> "$GITHUB_ENV"
+        else
+          echo "VERSION=${GITHUB_REF:11}" >> "$GITHUB_ENV"
+        fi
+      env:
+        INPUT_TAG: ${{ inputs.tag }}
 
     - name: Build Linux extension
       run: |
