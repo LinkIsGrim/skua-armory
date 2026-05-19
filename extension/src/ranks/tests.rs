@@ -76,41 +76,11 @@ mod file_parsing {
 
 #[cfg(test)]
 mod db_tests {
-    use deadpool_postgres::{Manager, Pool};
-    use testcontainers_modules::postgres::Postgres;
-    use testcontainers_modules::testcontainers::ContainerAsync;
-    use testcontainers_modules::testcontainers::ImageExt;
-    use testcontainers_modules::testcontainers::runners::AsyncRunner;
-    use tokio_postgres::{Config, NoTls};
-
     use super::super::commands::{get_player_inner, list_inner, set_player_inner};
     use super::super::migration::apply_migration;
     use super::super::types::RankFile;
-    use crate::database::bootstrap_schema;
+    use crate::database::{bootstrap_schema, start_test_db};
     use crate::domain::PlayerId;
-
-    async fn start_pg() -> (ContainerAsync<Postgres>, Pool) {
-        let container = Postgres::default()
-            .with_tag("18-alpine")
-            .start()
-            .await
-            .expect("failed to start postgres container");
-        let host = container.get_host().await.unwrap();
-        let port = container.get_host_port_ipv4(5432).await.unwrap();
-
-        let mut cfg = Config::new();
-        cfg.host(host.to_string());
-        cfg.port(port);
-        cfg.user("postgres");
-        cfg.password("postgres");
-        cfg.dbname("postgres");
-        let manager = Manager::new(cfg, NoTls);
-        let pool = Pool::builder(manager)
-            .max_size(4)
-            .build()
-            .expect("failed to build test pool");
-        (container, pool)
-    }
 
     fn rank(id: i16, name: &str) -> RankFile {
         RankFile {
@@ -123,8 +93,8 @@ mod db_tests {
 
     #[tokio::test]
     async fn apply_migration_empty_set_keeps_default_rank() {
-        let (_c, pool) = start_pg().await;
-        let client = pool.get().await.unwrap();
+        let (_c, db) = start_test_db().await;
+        let client = db.get_conn().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
 
         // Default (0, 'Unranked') is seeded by bootstrap_schema and is
@@ -149,8 +119,8 @@ mod db_tests {
 
     #[tokio::test]
     async fn apply_migration_upserts_ranks() {
-        let (_c, pool) = start_pg().await;
-        let client = pool.get().await.unwrap();
+        let (_c, db) = start_test_db().await;
+        let client = db.get_conn().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
 
         apply_migration(
@@ -169,8 +139,8 @@ mod db_tests {
 
     #[tokio::test]
     async fn apply_migration_updates_display_name() {
-        let (_c, pool) = start_pg().await;
-        let client = pool.get().await.unwrap();
+        let (_c, db) = start_test_db().await;
+        let client = db.get_conn().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
 
         apply_migration(&client, vec![rank(1, "Recruit")])
@@ -187,8 +157,8 @@ mod db_tests {
 
     #[tokio::test]
     async fn apply_migration_deletes_orphan_rank() {
-        let (_c, pool) = start_pg().await;
-        let client = pool.get().await.unwrap();
+        let (_c, db) = start_test_db().await;
+        let client = db.get_conn().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
 
         apply_migration(&client, vec![rank(1, "Recruit"), rank(2, "Corporal")])
@@ -217,8 +187,8 @@ mod db_tests {
 
     #[tokio::test]
     async fn apply_migration_preserves_in_game_rank() {
-        let (_c, pool) = start_pg().await;
-        let client = pool.get().await.unwrap();
+        let (_c, db) = start_test_db().await;
+        let client = db.get_conn().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
 
         apply_migration(&client, vec![rank(1, "Recruit")])
@@ -248,8 +218,8 @@ mod db_tests {
 
     #[tokio::test]
     async fn list_inner_returns_seeded_default() {
-        let (_c, pool) = start_pg().await;
-        let client = pool.get().await.unwrap();
+        let (_c, db) = start_test_db().await;
+        let client = db.get_conn().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
 
         // bootstrap_schema seeds (0, 'Unranked')
@@ -263,8 +233,8 @@ mod db_tests {
 
     #[tokio::test]
     async fn get_player_inner_unknown_returns_zero() {
-        let (_c, pool) = start_pg().await;
-        let client = pool.get().await.unwrap();
+        let (_c, db) = start_test_db().await;
+        let client = db.get_conn().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
 
         let rank = get_player_inner(&client, PlayerId::new(404)).await.unwrap();
@@ -273,8 +243,8 @@ mod db_tests {
 
     #[tokio::test]
     async fn get_player_inner_reflects_set() {
-        let (_c, pool) = start_pg().await;
-        let mut client = pool.get().await.unwrap();
+        let (_c, db) = start_test_db().await;
+        let mut client = db.get_conn().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
         apply_migration(&client, vec![rank(1, "Recruit"), rank(5, "Sergeant")])
             .await
@@ -291,8 +261,8 @@ mod db_tests {
 
     #[tokio::test]
     async fn set_player_inner_autocreates_player() {
-        let (_c, pool) = start_pg().await;
-        let mut client = pool.get().await.unwrap();
+        let (_c, db) = start_test_db().await;
+        let mut client = db.get_conn().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
         apply_migration(&client, vec![rank(1, "Recruit")])
             .await
@@ -314,8 +284,8 @@ mod db_tests {
 
     #[tokio::test]
     async fn set_player_inner_updates_existing() {
-        let (_c, pool) = start_pg().await;
-        let mut client = pool.get().await.unwrap();
+        let (_c, db) = start_test_db().await;
+        let mut client = db.get_conn().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
         apply_migration(&client, vec![rank(1, "Recruit"), rank(5, "Sergeant")])
             .await
@@ -331,8 +301,8 @@ mod db_tests {
 
     #[tokio::test]
     async fn set_player_inner_unknown_rank_fails() {
-        let (_c, pool) = start_pg().await;
-        let mut client = pool.get().await.unwrap();
+        let (_c, db) = start_test_db().await;
+        let mut client = db.get_conn().await.unwrap();
         bootstrap_schema(&client).await.expect("schema");
 
         // Only the seeded default rank (0) exists. rank=99 violates the FK.

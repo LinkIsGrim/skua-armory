@@ -5,7 +5,7 @@ use std::sync::LazyLock;
 use arma_rs::Context;
 use regex::Regex;
 use tokio_postgres::Client;
-use tracing::{info, instrument};
+use tracing::{info, instrument, trace};
 
 use super::pool::{INIT_STATE, get_db};
 use super::sql::{campaign, master};
@@ -179,12 +179,20 @@ pub(super) async fn do_bootstrap(campaign_id: Option<String>) -> QueryResult {
 /// Arma-callable entry point. Spawns the bootstrap onto the global runtime and
 /// returns `Processing`; result is delivered via `skua:database` callback.
 pub fn bootstrap(ctx: Context, campaign_id: String) -> QueryState {
+    trace!(%campaign_id, "bootstrap command entered");
     let Ok(campaign) = parse_campaign_arg(&campaign_id) else {
+        trace!(%campaign_id, "bootstrap: invalid campaign_id arg, returning InvalidArgument");
         return QueryState::InvalidArgument;
     };
 
+    trace!(?campaign, "spawning bootstrap task onto runtime");
     RUNTIME.spawn(async move {
+        trace!(?campaign, "bootstrap task running on runtime");
         let result = do_bootstrap(campaign).await;
+        trace!(
+            ?result,
+            "do_bootstrap returned; firing skua:database/bootstrap callback"
+        );
         let _ = ctx.callback_data("skua:database", "bootstrap", result);
     });
 

@@ -69,51 +69,8 @@ mod arma_roundtrip {
 
 #[cfg(test)]
 mod integration_tests {
-    use deadpool_postgres::{Manager, Pool};
-    use testcontainers_modules::postgres::Postgres;
-    use testcontainers_modules::testcontainers::ImageExt;
-    use testcontainers_modules::testcontainers::runners::AsyncRunner;
-    use tokio_postgres::{Config, NoTls};
-
     use super::super::schema::{bootstrap_campaign, bootstrap_master, sanitize_key};
-
-    fn create_test_pool(host: &str, port: u16) -> Pool {
-        let mut cfg = Config::new();
-        cfg.host(host);
-        cfg.port(port);
-        cfg.user("postgres");
-        cfg.password("postgres");
-        cfg.dbname("postgres");
-
-        let manager = Manager::new(cfg, NoTls);
-        Pool::builder(manager)
-            .max_size(4)
-            .build()
-            .expect("Failed to build test pool")
-    }
-
-    /// Starts a fresh Postgres testcontainer and returns the container handle
-    /// alongside a connection pool. Keep the handle alive for the duration of
-    /// the test (drop = container stops).
-    async fn start_pg() -> (
-        testcontainers_modules::testcontainers::ContainerAsync<Postgres>,
-        Pool,
-    ) {
-        let container = Postgres::default()
-            .with_tag("18-alpine")
-            .start()
-            .await
-            .expect("Failed to start postgres container");
-
-        let host = container.get_host().await.expect("Failed to get host");
-        let port = container
-            .get_host_port_ipv4(5432)
-            .await
-            .expect("Failed to get port");
-
-        let pool = create_test_pool(&host.to_string(), port);
-        (container, pool)
-    }
+    use crate::database::start_test_db;
 
     const SCHEMA_EXISTS_QUERY: &str = r"
         SELECT EXISTS (
@@ -170,8 +127,8 @@ mod integration_tests {
 
     #[tokio::test]
     async fn bootstrap_master_creates_schema_and_tables() {
-        let (_c, pool) = start_pg().await;
-        let client = pool.get().await.expect("Failed to get client");
+        let (_c, db) = start_test_db().await;
+        let client = db.get_conn().await.expect("Failed to get client");
 
         bootstrap_master(&client)
             .await
@@ -263,8 +220,8 @@ mod integration_tests {
 
     #[tokio::test]
     async fn bootstrap_master_is_idempotent() {
-        let (_c, pool) = start_pg().await;
-        let client = pool.get().await.expect("Failed to get client");
+        let (_c, db) = start_test_db().await;
+        let client = db.get_conn().await.expect("Failed to get client");
 
         bootstrap_master(&client)
             .await
@@ -286,8 +243,8 @@ mod integration_tests {
 
     #[tokio::test]
     async fn bootstrap_campaign_creates_schema_and_tables() {
-        let (_c, pool) = start_pg().await;
-        let client = pool.get().await.expect("Failed to get client");
+        let (_c, db) = start_test_db().await;
+        let client = db.get_conn().await.expect("Failed to get client");
 
         bootstrap_master(&client)
             .await
@@ -340,8 +297,8 @@ mod integration_tests {
 
     #[tokio::test]
     async fn bootstrap_campaign_is_idempotent() {
-        let (_c, pool) = start_pg().await;
-        let client = pool.get().await.expect("Failed to get client");
+        let (_c, db) = start_test_db().await;
+        let client = db.get_conn().await.expect("Failed to get client");
 
         bootstrap_master(&client)
             .await
@@ -364,8 +321,8 @@ mod integration_tests {
 
     #[tokio::test]
     async fn upsert_player_inserts_on_first_call() {
-        let (_c, pool) = start_pg().await;
-        let client = pool.get().await.expect("Failed to get client");
+        let (_c, db) = start_test_db().await;
+        let client = db.get_conn().await.expect("Failed to get client");
         bootstrap_master(&client)
             .await
             .expect("bootstrap_master should succeed");
@@ -390,8 +347,8 @@ mod integration_tests {
 
     #[tokio::test]
     async fn upsert_player_updates_name_and_last_seen() {
-        let (_c, pool) = start_pg().await;
-        let client = pool.get().await.expect("Failed to get client");
+        let (_c, db) = start_test_db().await;
+        let client = db.get_conn().await.expect("Failed to get client");
         bootstrap_master(&client)
             .await
             .expect("bootstrap_master should succeed");
@@ -424,8 +381,8 @@ mod integration_tests {
 
     #[tokio::test]
     async fn upsert_player_preserves_admin_banned_rank_overrides() {
-        let (_c, pool) = start_pg().await;
-        let client = pool.get().await.expect("Failed to get client");
+        let (_c, db) = start_test_db().await;
+        let client = db.get_conn().await.expect("Failed to get client");
         bootstrap_master(&client)
             .await
             .expect("bootstrap_master should succeed");
@@ -463,8 +420,8 @@ mod integration_tests {
 
     #[tokio::test]
     async fn multiple_campaigns_coexist() {
-        let (_c, pool) = start_pg().await;
-        let client = pool.get().await.expect("Failed to get client");
+        let (_c, db) = start_test_db().await;
+        let client = db.get_conn().await.expect("Failed to get client");
 
         bootstrap_master(&client)
             .await

@@ -7,7 +7,8 @@ class CfgPatches {
         requiredVersion = REQUIRED_VERSION;
         requiredAddons[] = {
             "skua_main",
-            "skua_common"
+            "skua_common",
+            "skua_database"
         };
         author = "LinkIsGrim";
         name = COMPONENT_NAME;
