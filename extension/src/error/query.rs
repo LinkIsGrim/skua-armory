@@ -12,6 +12,7 @@ pub enum QueryState {
     Done = 1,
     InvalidArgument = 2,
     TransientFailure = 3,
+    Timeout = 4,
 }
 
 impl TryFrom<u8> for QueryState {
@@ -23,6 +24,7 @@ impl TryFrom<u8> for QueryState {
             1 => Ok(QueryState::Done),
             2 => Ok(QueryState::InvalidArgument),
             3 => Ok(QueryState::TransientFailure),
+            4 => Ok(QueryState::Timeout),
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,
                 "Unknown QueryState value",

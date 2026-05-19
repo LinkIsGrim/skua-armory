@@ -15,6 +15,7 @@ pub mod certification;
 pub mod database;
 pub mod domain;
 pub mod editor;
+pub mod event;
 pub mod logging;
 pub mod ranks;
 pub mod sync;

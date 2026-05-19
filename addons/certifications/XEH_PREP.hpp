@@ -1,6 +1,5 @@
-PREP(extCallback);
-PREP(onCertificationListReturn);
-PREP(onGrantReturn);
-PREP(onRevokeReturn);
+PREP(onCertificationGranted);
+PREP(onCertificationListChanged);
+PREP(onCertificationRevoked);
 PREP(processGrant);
 PREP(processRevoke);

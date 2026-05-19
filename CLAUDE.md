@@ -60,14 +60,21 @@ Rust + arma-rs. Entry point `src/lib.rs` registers:
 
 Module layout under `src/`:
 - `core/` — global `tokio::Runtime` via `LazyLock`. Spawn async work onto `RUNTIME`.
-- `error/` — unified `DbError`, `QueryResult`/`QueryState`/`QueryOutcome<T>`, and the `transient_error`/`transient_query_error` helpers (log + return a TransientFailure with caller location).
+- `error/` — unified `DbError`, `QueryResult`/`QueryState`/`QueryOutcome<T>`, and the `transient_error`/`transient_query_error` helpers (log + return a TransientFailure with caller location). `QueryState::Timeout` is reserved for `run_sync` (see below).
+- `event/` — unified Rust→SQF event surface. `Event` enum defines every state-change variant (cert grant/revoke/list change, rank change/list change, player connect/disconnect). `event::emit(ctx, event)` publishes to (1) an in-process Tokio `broadcast::Sender` for Rust-side subscribers via `event::subscribe()` and (2) the SQF side via `ctx.callback_data("skua:event", event_name, ...)`. Critical events (currently only `PlayerConnected`) retry the SQF callback up to 3× with 5ms async backoff. `event/sync.rs` provides `run_sync` for ack-needing fast paths: `RUNTIME.block_on(timeout(50ms, ...))` returning `SyncOutcome<T>` directly from `callExtension`. **Hard ceiling**: never use `run_sync` on paths that might exceed ~20ms blocking; player join etc. must stay event-driven.
 - `logging/` — `ArmaLayer` (a `tracing_subscriber::Layer` that forwards events to Arma via the `skua_ext_log` callback) plus `logger:set_level`/`get_level` commands. Initialized once at extension build with `logging::init(ctx)`.
 - `database/` — split into `state.rs` (atomic `DatabaseState`), `pool.rs` (deadpool init from `DATABASE_*` env vars, lazy `OnceCell`), `schema.rs` (`bootstrap_schema` creates tables + seeds default rank; `bootstrap_master` adds cert/rank migration on top), `sql.rs` (`include_str!` of `sql/*.sql`), `commands.rs` (Arma group: `bootstrap`, `state`).
 - `database/sql/` — numbered SQL files (000–099 = master, 100–199 = campaign templates with `${campaign_id}` placeholder).
 - `domain/` — `PlayerId(u64)` with FromArma/IntoArma/ToSql so commands can take `PlayerId` directly.
 - `certification/` + `ranks/` — each module is `commands.rs` (Arma entry points) + `migration.rs` (file-driven reconciliation) + `types.rs` + `tests.rs`. `*_inner` functions take a raw `tokio_postgres::Client` for direct integration testing.
 
-SQF callers use `"skua" callExtension [<command>, <args>]`. The Arma callback channel for the database group is `skua:database` (e.g. `skua:database / bootstrap`); cert/rank callbacks land on `skua:certification` / `skua:ranks`. The logger emits on `skua_ext_log`.
+### Wire-side channels
+
+SQF callers use `"skua" callExtension [<command>, <args>]`. There are three distinct callback channels:
+
+- `skua:event` (app events) — unified channel for every state-change broadcast. Payload is `[QueryState::Done, json_payload]` where `_function` carries the CBA event name verbatim (e.g. `"skua_certification_granted"`). The adapter at `addons/common/functions/fnc_extCallback_event.sqf` re-emits as a CBA event via `CBA_fnc_localEvent`; subscribers register with `CBA_fnc_addEventHandler`. Event names are defined as `QEV_*` macros in `addons/main/script_macros_events.hpp` and synced against `Event::event_name()` by `extension/src/enum_sync.rs`.
+- `skua_ext_log` (infra) — tracing layer pushes log events here; routed by `addons/common/functions/fnc_extCallback_log.sqf`.
+- `skua:database` (caller-ack only) — `skua:database/bootstrap` carries the one-shot bootstrap completion ack. The legacy per-group channels (`skua:certification`, `skua:ranks`, `skua:database/player_connect`) are retained for failure-only callbacks from `grant`/`revoke`/`set_player` commands; success cases go through events instead. SQF doesn't subscribe to these failure channels — they're logged in the extension and the SQF side covers idempotency via strand-timer retries (see `addons/database/functions/fnc_playerConnect.sqf`) and event-driven convergence.
 
 ### File-driven migrations (`database/migrations/`)
 Cert and rank definitions are authored as JSON files. They're embedded into the extension binary at compile time via `include_dir!` and reconciled with the DB on every bootstrap:

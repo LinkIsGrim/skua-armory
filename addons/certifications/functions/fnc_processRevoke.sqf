@@ -7,7 +7,7 @@
  *
  * Assumes GVAR(map) is populated — caller is responsible for queueing the
  * revoke onto GVAR(pendingCertEvents) and replaying after
- * fnc_onCertificationListReturn if the static list hasn't loaded yet.
+ * fnc_onCertificationListChanged if the static list hasn't loaded yet.
  *
  * Arguments:
  * 0: Player Steam ID <STRING>

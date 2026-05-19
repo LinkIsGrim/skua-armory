@@ -22,7 +22,9 @@ params ["_name", "_function", "_data"];
 if (_name != "skua:database") exitWith {};
 
 switch (_function) do {
-    case "player_connect": {_data call FUNC(onPlayerConnectReturn)};
+    // "player_connect" moved to the unified skua:event channel:
+    // QEV_PLAYER_CONNECTED via CBA. Bootstrap still uses this channel because
+    // it ships a one-shot completion ack, not a state-change event.
     case "bootstrap": {_data call FUNC(onBootstrapReturn)};
     default {ERROR_1("Unhandled extension callback function: %1",_function)};
 };

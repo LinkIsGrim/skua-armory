@@ -1,10 +1,15 @@
 //! Arma-callable rank commands.
 //!
-//! Each command returns `Processing` synchronously and fires a callback on
-//! `skua:ranks / <function>` with a [`QueryOutcome`]:
-//! - `[Done, payload]` on success (`list` = `Vec<Rank>`, `get_player` = `i16`,
-//!   `set_player` = empty `[]`)
-//! - `[TransientFailure, error]` on failure.
+//! - `list`: queries the rank set and emits [`Event::RankListChanged`]. Used by
+//!   the post-bootstrap push; SQF subscribes to the event rather than waiting
+//!   on a per-call reply.
+//! - `get_player`: returns the player's rank id via `skua:ranks/get_player`
+//!   callback. Caller-ack style; no event (the rank hasn't changed, only the
+//!   caller's view of it).
+//! - `set_player`: mutates the rank and emits [`Event::RankChanged`] on
+//!   success. On failure, fires a `skua:ranks/set_player` callback with the
+//!   error so the caller can distinguish "request failed" from "rank set to a
+//!   value that happens to equal the old one".
 
 use arma_rs::{Context, Group};
 use tokio_postgres::Client;
@@ -15,6 +20,7 @@ use crate::core::RUNTIME;
 use crate::database::get_client;
 use crate::domain::PlayerId;
 use crate::error::{QueryError, QueryOutcome, QueryState, transient_query_error};
+use crate::event::{self, Event};
 
 pub fn group() -> Group {
     Group::new()
@@ -30,11 +36,7 @@ fn list(ctx: Context) -> QueryState {
         let client = match get_client().await {
             Ok(c) => c,
             Err(e) => {
-                let outcome: QueryOutcome<Vec<Rank>> =
-                    QueryOutcome::Failed(transient_query_error("Failed to get database client", e));
-                if let Err(e) = ctx.callback_data("skua:ranks", "list", outcome) {
-                    error!(error = ?e, "failed to dispatch ranks:list callback");
-                }
+                error!(error = ?e, "ranks:list failed to get database client");
                 return;
             }
         };
@@ -43,18 +45,13 @@ fn list(ctx: Context) -> QueryState {
     QueryState::Processing
 }
 
-/// Queries the ranks table and fires `skua:ranks/list` with the rank vector
-/// (or a transient failure on query error).
-///
-/// Reused by [`crate::sync::push_post_bootstrap`] so the same dispatch path
-/// serves both ad-hoc SQF requests and post-bootstrap pushes.
+/// Queries the ranks table and emits [`Event::RankListChanged`] with the full
+/// list. Reused by [`crate::sync::push_post_bootstrap`] so the same emit path
+/// serves ad-hoc SQF requests and post-bootstrap pushes.
 pub(crate) async fn push_list(ctx: &Context, client: &Client) {
-    let outcome: QueryOutcome<Vec<Rank>> = match list_inner(client).await {
-        Ok(rows) => QueryOutcome::Done(rows),
-        Err(err) => QueryOutcome::Failed(err),
-    };
-    if let Err(e) = ctx.callback_data("skua:ranks", "list", outcome) {
-        error!(error = ?e, "failed to dispatch ranks:list callback");
+    match list_inner(client).await {
+        Ok(rows) => event::emit(ctx, &Event::RankListChanged { ranks: rows }),
+        Err(err) => error!(error = %err, "failed to query ranks for push"),
     }
 }
 
@@ -124,25 +121,24 @@ pub(super) async fn get_player_inner(
 
 fn set_player(ctx: Context, player_id: PlayerId, rank_id: i16) -> QueryState {
     RUNTIME.spawn(async move {
-        let outcome = run_set_player(player_id, rank_id).await;
-        if let Err(e) = ctx.callback_data("skua:ranks", "set_player", outcome) {
-            error!(error = ?e, "failed to dispatch ranks:set_player callback");
+        match run_set_player(player_id, rank_id).await {
+            Ok(()) => event::emit(&ctx, &Event::RankChanged { player_id, rank_id }),
+            Err(err) => {
+                let outcome: QueryOutcome<Vec<String>> = QueryOutcome::Failed(err);
+                if let Err(e) = ctx.callback_data("skua:ranks", "set_player", outcome) {
+                    error!(error = ?e, "failed to dispatch ranks:set_player failure");
+                }
+            }
         }
     });
     QueryState::Processing
 }
 
-async fn run_set_player(player_id: PlayerId, rank_id: i16) -> QueryOutcome<Vec<String>> {
-    let mut client = match get_client().await {
-        Ok(c) => c,
-        Err(e) => {
-            return QueryOutcome::Failed(transient_query_error("Failed to get database client", e));
-        }
-    };
-    match set_player_inner(&mut client, player_id, rank_id).await {
-        Ok(()) => QueryOutcome::Done(Vec::new()),
-        Err(err) => QueryOutcome::Failed(err),
-    }
+async fn run_set_player(player_id: PlayerId, rank_id: i16) -> Result<(), QueryError> {
+    let mut client = get_client()
+        .await
+        .map_err(|e| transient_query_error("Failed to get database client", e))?;
+    set_player_inner(&mut client, player_id, rank_id).await
 }
 
 /// Auto-creates the `player_info` row if absent (with `name = ''`, `rank =

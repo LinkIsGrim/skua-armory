@@ -5,8 +5,8 @@
  * via CBA_fnc_serverEvent and records the cert in the player's local list.
  *
  * Assumes GVAR(map) is populated — caller is responsible for queueing the
- * grant onto GVAR(pendingCertEvents) and replaying after fnc_onCertificationListReturn
- * if the static list hasn't loaded yet.
+ * grant onto GVAR(pendingCertEvents) and replaying after
+ * fnc_onCertificationListChanged if the static list hasn't loaded yet.
  *
  * Arguments:
  * 0: Player Steam ID <STRING>

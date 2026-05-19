@@ -60,21 +60,21 @@ mod wire_format {
         );
     }
 
-    /// `grant` callbacks (both ad-hoc grants and `push_player_certs` replays)
-    /// ship a `{player_id, cert_id}` JSON object consumed by
-    /// `fnc_onGrantReturn`. Lock the key names + types
-    /// (`player_id` must be a string so `BIS_fnc_getUnitByUID` is happy) by
-    /// serializing the actual prod struct — a rename in `PlayerCertEvent`
-    /// then immediately fails this test.
+    /// `CertificationGranted` events (both ad-hoc grants and `push_player_certs`
+    /// replays and watchdog-detected drift) ship a `{player_id, cert_id}` JSON
+    /// object consumed by `fnc_onCertificationGranted`. Lock the key names +
+    /// types (`player_id` must be a string so `BIS_fnc_getUnitByUID` is happy)
+    /// by serializing through the actual `Event` payload path.
     #[test]
     fn grant_event_payload_shape() {
-        use super::super::commands::PlayerCertEvent;
         use crate::domain::PlayerId;
+        use crate::event::Event;
 
-        let json = serde_json::to_string(&PlayerCertEvent {
+        let json = Event::CertificationGranted {
             player_id: PlayerId::new(76_561_198_000_000_000),
-            cert_id: "pilot",
-        })
+            cert_id: "pilot".into(),
+        }
+        .payload()
         .expect("serialize");
         let parsed: serde_json::Value = serde_json::from_str(&json).expect("parse back");
         let obj = parsed.as_object().expect("object");
