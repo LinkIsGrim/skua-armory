@@ -82,6 +82,13 @@ jobs:
     - name: Run HEMTT release
       run: hemtt release
 
+    - name: Archive release artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: skua-armory-${{ env.VERSION }}
+        path: .hemttout/release
+        if-no-files-found: error
+
     - name: Upload to Workshop
       if: ${{ !inputs.dry_run }}
       uses: arma-actions/workshop-upload@v1
