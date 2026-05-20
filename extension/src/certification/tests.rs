@@ -536,7 +536,10 @@ mod db_tests {
             .await
             .unwrap()
             .get(0);
-        assert!(admin_exists, "granter player_info row should be auto-created");
+        assert!(
+            admin_exists,
+            "granter player_info row should be auto-created"
+        );
     }
 
     #[tokio::test]
@@ -587,8 +590,12 @@ mod db_tests {
         .unwrap();
 
         let player = PlayerId::new(99);
-        grant_inner(&mut client, player, "pilot", ADMIN).await.unwrap();
-        grant_inner(&mut client, player, "medic", ADMIN).await.unwrap();
+        grant_inner(&mut client, player, "pilot", ADMIN)
+            .await
+            .unwrap();
+        grant_inner(&mut client, player, "medic", ADMIN)
+            .await
+            .unwrap();
 
         let ids = get_player_inner(&client, player).await.unwrap();
         assert_eq!(ids, vec!["medic".to_string(), "pilot".to_string()]);
@@ -614,7 +621,9 @@ mod db_tests {
             .unwrap();
 
         let player = PlayerId::new(123);
-        grant_inner(&mut client, player, "pilot", ADMIN).await.unwrap();
+        grant_inner(&mut client, player, "pilot", ADMIN)
+            .await
+            .unwrap();
         revoke_inner(&client, player, "pilot").await.unwrap();
 
         let ids = get_player_inner(&client, player).await.unwrap();
