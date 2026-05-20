@@ -5,7 +5,6 @@
 //! as a [`QueryError`] instead of silently overwriting a player's kit with
 //! garbage.
 
-use arma_rs::Value;
 use arma_rs::loadout::Loadout;
 use arma_rs::{FromArma, IntoArma};
 use tokio_postgres::Client;
