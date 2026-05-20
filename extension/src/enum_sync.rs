@@ -57,6 +57,27 @@ const EVENT_VARIANTS: &[(&str, &str)] = &[
     ("PLAYER_DISCONNECTED", "skua_player_disconnected"),
 ];
 
+/// Client-facing rebroadcast events. These have no Rust-side `Event` variant —
+/// the server's CBA handler of the canonical event re-fires the `_GLOBAL`
+/// variant via `CBA_fnc_globalEvent` (non-JIP) so hasInterface clients can
+/// react to live state changes without needing the extension's event stream
+/// (which is server-local). Subject to the same subscriber-existence check
+/// as canonical events.
+const CLIENT_REBROADCAST_VARIANTS: &[(&str, &str)] = &[
+    (
+        "CERTIFICATION_GRANTED_GLOBAL",
+        "skua_certification_granted_global",
+    ),
+    (
+        "CERTIFICATION_REVOKED_GLOBAL",
+        "skua_certification_revoked_global",
+    ),
+    (
+        "CERTIFICATION_LIST_CHANGED_GLOBAL",
+        "skua_certification_list_changed_global",
+    ),
+];
+
 fn expected_enums_hpp() -> String {
     let mut out = String::new();
 
@@ -112,12 +133,23 @@ fn expected_events_hpp() -> String {
     out.push_str(
         "// SQF subscribers register handlers via `[QEV_*, ...] call CBA_fnc_addEventHandler`.\n",
     );
+    // Width spans both sections so columns line up across the file.
     let width = EVENT_VARIANTS
         .iter()
+        .chain(CLIENT_REBROADCAST_VARIANTS.iter())
         .map(|(n, _)| n.len())
         .max()
         .unwrap_or(0);
     for (name, value) in EVENT_VARIANTS {
+        let _ = writeln!(out, "#define QEV_{name:<width$} \"{value}\"");
+    }
+
+    out.push('\n');
+    out.push_str("// Client-facing rebroadcasts of the canonical events above. Fired by the\n");
+    out.push_str("// server's own handler of each canonical event via CBA_fnc_globalEvent\n");
+    out.push_str("// (non-JIP), so hasInterface clients can react to live state changes without\n");
+    out.push_str("// needing the extension to reach them directly.\n");
+    for (name, value) in CLIENT_REBROADCAST_VARIANTS {
         let _ = writeln!(out, "#define QEV_{name:<width$} \"{value}\"");
     }
     out
@@ -195,7 +227,10 @@ fn collect_addons_sqf_text() -> String {
 fn every_event_macro_has_a_subscriber() {
     let sqf = collect_addons_sqf_text();
     let mut missing: Vec<String> = Vec::new();
-    for (name, _value) in EVENT_VARIANTS {
+    for (name, _value) in EVENT_VARIANTS
+        .iter()
+        .chain(CLIENT_REBROADCAST_VARIANTS.iter())
+    {
         let macro_ident = format!("QEV_{name}");
         if !sqf.contains(&macro_ident) {
             missing.push(macro_ident);

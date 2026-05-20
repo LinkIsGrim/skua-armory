@@ -30,11 +30,15 @@ if (isNull _playerUnit) exitWith {
     ERROR_1("Failed to find player unit for certification grant: %1",_playerID);
 };
 
+private _playerCerts = _playerUnit getVariable [QGVAR(list), []];
+private _idx = _playerCerts pushBackUnique _certID;
+if (_idx == -1) exitWith { // early exit to avoid JIP queue flooding if the cert is already present
+    INFO_2("Player %1 already has cert %2, skipping grant event",_playerID,_certID);
+};
+
 private _event = _certData get "grant_event";
 INFO_2("Executing certification event %1 for player %2",_event,_playerID);
 [_event, _playerUnit] call CBA_fnc_serverEvent;
 
-private _playerCerts = _playerUnit getVariable [QGVAR(list), []];
-_playerCerts pushBackUnique _certID;
 _playerUnit setVariable [QGVAR(list), _playerCerts, true];
 INFO_2("Certification %1 granted to player %2 successfully",_certID,_playerID);

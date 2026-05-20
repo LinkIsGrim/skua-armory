@@ -87,6 +87,41 @@ mod wire_format {
         );
         assert_eq!(obj["cert_id"], "pilot");
     }
+
+    /// `certification:get_player` callback payload carries the queried
+    /// `player_id` alongside the cert id list so the SQF callback can route
+    /// the response back to whichever player it asked about. Lock the JSON
+    /// keys + `player_id` stringification through the `IntoArma` impl on
+    /// `PlayerCerts`.
+    #[test]
+    fn get_player_callback_payload_shape() {
+        use super::super::types::PlayerCerts;
+        use crate::domain::PlayerId;
+        use arma_rs::IntoArma;
+
+        let payload = PlayerCerts {
+            player_id: PlayerId::new(76_561_198_000_000_000),
+            cert_ids: vec!["pilot".into(), "medic".into()],
+        };
+
+        let value = payload.to_arma();
+        let arma_rs::Value::String(json) = value else {
+            panic!("expected JSON string, got {value:?}");
+        };
+
+        let parsed: serde_json::Value = serde_json::from_str(&json).expect("parse back");
+        let obj = parsed.as_object().expect("object");
+        assert_eq!(obj.len(), 2, "exactly two fields expected");
+        assert_eq!(obj["player_id"], "76561198000000000");
+        assert!(
+            obj["player_id"].is_string(),
+            "player_id must serialize as a JSON string for BIS_fnc_getUnitByUID"
+        );
+        let cert_ids = obj["cert_ids"].as_array().expect("cert_ids is array");
+        assert_eq!(cert_ids.len(), 2);
+        assert_eq!(cert_ids[0], "pilot");
+        assert_eq!(cert_ids[1], "medic");
+    }
 }
 
 #[cfg(test)]
@@ -403,6 +438,8 @@ mod db_tests {
 
     // -- grant_inner / get_player_inner / revoke_inner --
 
+    const ADMIN: PlayerId = PlayerId::new(76_561_198_111_111_111);
+
     #[tokio::test]
     async fn grant_inner_autocreates_player_and_inserts_cert() {
         let (_c, db) = start_test_db().await;
@@ -413,7 +450,7 @@ mod db_tests {
             .unwrap();
 
         let player = PlayerId::new(76_561_198_000_000_000);
-        grant_inner(&mut client, player, "pilot")
+        grant_inner(&mut client, player, "pilot", ADMIN)
             .await
             .expect("grant");
 
@@ -451,10 +488,10 @@ mod db_tests {
             .unwrap();
 
         let player = PlayerId::new(1);
-        grant_inner(&mut client, player, "pilot")
+        grant_inner(&mut client, player, "pilot", ADMIN)
             .await
             .expect("grant 1");
-        grant_inner(&mut client, player, "pilot")
+        grant_inner(&mut client, player, "pilot", ADMIN)
             .await
             .expect("grant 2 (dup)");
 
@@ -477,10 +514,101 @@ mod db_tests {
         // No certs migrated — the FK on player_certs.cert_id will violate.
 
         let player = PlayerId::new(42);
-        let result = grant_inner(&mut client, player, "ghost").await;
+        let result = grant_inner(&mut client, player, "ghost", ADMIN).await;
         assert!(
             result.is_err(),
             "granting non-existent cert should fail (FK violation)"
+        );
+    }
+
+    #[tokio::test]
+    async fn grant_inner_records_granted_by() {
+        let (_c, db) = start_test_db().await;
+        let mut client = db.get_conn().await.unwrap();
+        bootstrap_schema(&client).await.expect("schema");
+        apply_migration(&client, vec![cert("pilot", "Pilot")])
+            .await
+            .unwrap();
+
+        let player = PlayerId::new(555);
+        grant_inner(&mut client, player, "pilot", ADMIN)
+            .await
+            .expect("grant");
+
+        let granted_by_raw: i64 = client
+            .query_one(
+                "SELECT granted_by FROM skua_master.player_certs
+                 WHERE steam_id = $1 AND cert_id = $2",
+                &[&player, &"pilot"],
+            )
+            .await
+            .unwrap()
+            .get(0);
+        assert_eq!(PlayerId::from_i64(granted_by_raw), ADMIN);
+    }
+
+    #[tokio::test]
+    async fn grant_inner_creates_granter_player_info_row() {
+        let (_c, db) = start_test_db().await;
+        let mut client = db.get_conn().await.unwrap();
+        bootstrap_schema(&client).await.expect("schema");
+        apply_migration(&client, vec![cert("pilot", "Pilot")])
+            .await
+            .unwrap();
+
+        let player = PlayerId::new(800);
+        // Admin has no prior player_info row — grant must upsert one to
+        // satisfy player_certs.granted_by FK.
+        grant_inner(&mut client, player, "pilot", ADMIN)
+            .await
+            .expect("grant");
+
+        let admin_exists: bool = client
+            .query_one(
+                "SELECT EXISTS(SELECT 1 FROM skua_master.player_info WHERE steam_id = $1)",
+                &[&ADMIN],
+            )
+            .await
+            .unwrap()
+            .get(0);
+        assert!(
+            admin_exists,
+            "granter player_info row should be auto-created"
+        );
+    }
+
+    #[tokio::test]
+    async fn grant_inner_idempotent_preserves_first_granter() {
+        let (_c, db) = start_test_db().await;
+        let mut client = db.get_conn().await.unwrap();
+        bootstrap_schema(&client).await.expect("schema");
+        apply_migration(&client, vec![cert("pilot", "Pilot")])
+            .await
+            .unwrap();
+
+        let player = PlayerId::new(900);
+        let admin_b = PlayerId::new(76_561_198_222_222_222);
+
+        grant_inner(&mut client, player, "pilot", ADMIN)
+            .await
+            .expect("grant 1");
+        grant_inner(&mut client, player, "pilot", admin_b)
+            .await
+            .expect("grant 2 (dup, different admin)");
+
+        let granted_by_raw: i64 = client
+            .query_one(
+                "SELECT granted_by FROM skua_master.player_certs
+                 WHERE steam_id = $1 AND cert_id = $2",
+                &[&player, &"pilot"],
+            )
+            .await
+            .unwrap()
+            .get(0);
+        assert_eq!(
+            PlayerId::from_i64(granted_by_raw),
+            ADMIN,
+            "ON CONFLICT DO NOTHING should preserve the original granter"
         );
     }
 
@@ -497,8 +625,12 @@ mod db_tests {
         .unwrap();
 
         let player = PlayerId::new(99);
-        grant_inner(&mut client, player, "pilot").await.unwrap();
-        grant_inner(&mut client, player, "medic").await.unwrap();
+        grant_inner(&mut client, player, "pilot", ADMIN)
+            .await
+            .unwrap();
+        grant_inner(&mut client, player, "medic", ADMIN)
+            .await
+            .unwrap();
 
         let ids = get_player_inner(&client, player).await.unwrap();
         assert_eq!(ids, vec!["medic".to_string(), "pilot".to_string()]);
@@ -524,7 +656,9 @@ mod db_tests {
             .unwrap();
 
         let player = PlayerId::new(123);
-        grant_inner(&mut client, player, "pilot").await.unwrap();
+        grant_inner(&mut client, player, "pilot", ADMIN)
+            .await
+            .unwrap();
         revoke_inner(&client, player, "pilot").await.unwrap();
 
         let ids = get_player_inner(&client, player).await.unwrap();

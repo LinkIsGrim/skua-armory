@@ -18,6 +18,7 @@ pub mod domain;
 pub mod editor;
 pub mod event;
 pub mod logging;
+pub mod player_info;
 pub mod ranks;
 pub mod sync;
 
@@ -37,6 +38,7 @@ fn init() -> Extension {
         .group("logger", logging::group())
         .group("database", database::group())
         .group("certification", certification::group())
+        .group("player_info", player_info::group())
         .group("ranks", ranks::group())
         .finish();
 

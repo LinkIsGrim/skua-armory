@@ -7,7 +7,8 @@ class CfgPatches {
         requiredVersion = REQUIRED_VERSION;
         requiredAddons[] = {
             "skua_main",
-            "skua_common"
+            "skua_common",
+            "skua_certifications"
         };
         author = "LinkIsGrim";
         name = COMPONENT_NAME;
@@ -17,6 +18,8 @@ class CfgPatches {
 
 #include "CfgEventHandlers.hpp"
 #include "CfgDebriefing.hpp"
+#include "CfgVehicles.hpp"
+#include "ui\RscAdminCertMenu.hpp"
 
 enableDebugConsole[] = { // TODO: Replace with database lookup at runtime
     "76561198027717871", //Picker
