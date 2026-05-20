@@ -91,7 +91,7 @@ mod wire_format {
     /// `certification:get_player` callback payload carries the queried
     /// `player_id` alongside the cert id list so the SQF callback can route
     /// the response back to whichever player it asked about. Lock the JSON
-    /// keys + `player_id` stringification through the IntoArma impl on
+    /// keys + `player_id` stringification through the `IntoArma` impl on
     /// `PlayerCerts`.
     #[test]
     fn get_player_callback_payload_shape() {
