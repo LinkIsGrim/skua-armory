@@ -13,6 +13,10 @@ on:
         description: 'Tag to publish (e.g. v2.14.2)'
         required: true
         type: string
+      dry_run:
+        description: 'Skip Workshop upload (build only)'
+        type: boolean
+        default: false
 
 jobs:
   release:
@@ -34,13 +38,19 @@ jobs:
     - name: Cache cargo
       uses: Swatinem/rust-cache@v2
 
-    - name: Install Windows build tooling
-      run: |
-        rustup target add x86_64-pc-windows-msvc
-        cargo install cargo-xwin --locked
+    - name: Install Windows target
+      run: rustup target add x86_64-pc-windows-msvc
 
-    - name: Install cross
-      run: cargo install cross --locked
+    - name: Install cargo-xwin and cross
+      uses: taiki-e/install-action@v2
+      with:
+        tool: cargo-xwin,cross
+
+    - name: Cache xwin SDK
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/cargo-xwin
+        key: xwin-${{ runner.os }}-v1
 
     # For push.tags GITHUB_REF is "refs/tags/v2.14.2" (strip 11 chars).
     # For workflow_dispatch we read the input directly.
@@ -73,6 +83,7 @@ jobs:
       run: hemtt release
 
     - name: Upload to Workshop
+      if: ${{ !inputs.dry_run }}
       uses: arma-actions/workshop-upload@v1
       with:
         appId: '107410'    # default
