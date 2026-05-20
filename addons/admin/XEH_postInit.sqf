@@ -37,6 +37,29 @@ if (isServer) then {
         params ["", "_uid"];
         GVAR(clientAddonMap) deleteAt _uid;
     }];
+
+    [QGVAR(grantRequest), LINKFUNC(handleGrantRequest)] call CBA_fnc_addEventHandler;
+    [QGVAR(revokeRequest), LINKFUNC(handleRevokeRequest)] call CBA_fnc_addEventHandler;
 };
 
 call FUNC(sendClientAddons);
+
+if (hasInterface) then {
+    // Refresh the open admin cert menu (no-op if closed) whenever cert state
+    // changes anywhere. Server rebroadcasts the canonical events as `_GLOBAL`
+    // so clients catch live grants/revokes triggered by any admin.
+    [QEV_CERTIFICATION_GRANTED_GLOBAL, {call FUNC(refreshCertMenu)}] call CBA_fnc_addEventHandler;
+    [QEV_CERTIFICATION_REVOKED_GLOBAL, {call FUNC(refreshCertMenu)}] call CBA_fnc_addEventHandler;
+    [QEV_CERTIFICATION_LIST_CHANGED_GLOBAL, {call FUNC(refreshCertMenu)}] call CBA_fnc_addEventHandler;
+
+    // Catch player joins/leaves so the player listbox stays current without
+    // forcing the admin to reopen the menu. `PlayerConnected` is the engine
+    // mission event — it fires on every machine, unlike skua_common's
+    // clientConnected which is a server-only serverEvent. Defer the refresh
+    // a few seconds so allPlayers / the player's unit object are populated
+    // by the time we rebuild the listbox.
+    addMissionEventHandler ["PlayerConnected", {
+        [{call FUNC(refreshCertMenu)}, [], 3] call CBA_fnc_waitAndExecute;
+    }];
+    addMissionEventHandler ["PlayerDisconnected", {call FUNC(refreshCertMenu)}];
+};

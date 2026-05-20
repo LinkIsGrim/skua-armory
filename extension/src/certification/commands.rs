@@ -176,7 +176,12 @@ pub(crate) async fn get_player_inner(
 
 // -- grant --
 
-fn grant(ctx: Context, player_id: PlayerId, cert_id: String) -> QueryState {
+fn grant(
+    ctx: Context,
+    player_id: PlayerId,
+    cert_id: String,
+    granter_steam_id: PlayerId,
+) -> QueryState {
     RUNTIME.spawn(async move {
         let mut client = match get_client().await {
             Ok(c) => c,
@@ -189,7 +194,7 @@ fn grant(ctx: Context, player_id: PlayerId, cert_id: String) -> QueryState {
                 return;
             }
         };
-        match grant_inner(&mut client, player_id, &cert_id).await {
+        match grant_inner(&mut client, player_id, &cert_id, granter_steam_id).await {
             Ok(()) => dispatch_grant_event(&ctx, player_id, &cert_id),
             Err(err) => dispatch_failure(&ctx, "grant", err),
         }
@@ -197,31 +202,36 @@ fn grant(ctx: Context, player_id: PlayerId, cert_id: String) -> QueryState {
     QueryState::Processing
 }
 
-#[instrument(level = "debug", name = "certification_grant", skip(client), fields(player_id = %player_id, cert_id = %cert_id))]
+#[instrument(level = "debug", name = "certification_grant", skip(client), fields(player_id = %player_id, cert_id = %cert_id, granted_by = %granted_by))]
 pub(super) async fn grant_inner(
     client: &mut Client,
     player_id: PlayerId,
     cert_id: &str,
+    granted_by: PlayerId,
 ) -> Result<(), QueryError> {
     let tx = client
         .transaction()
         .await
         .map_err(|e| transient_query_error("Failed to begin grant transaction", e))?;
 
+    // Ensure both grantee and granter have player_info rows so the
+    // player_certs (steam_id) and player_certs.granted_by FKs are satisfied.
+    // The granter may not have connected yet — admins can grant from outside
+    // an active session in principle.
     tx.execute(
         "INSERT INTO skua_master.player_info (steam_id, name)
-         VALUES ($1, '')
+         VALUES ($1, ''), ($2, '')
          ON CONFLICT (steam_id) DO NOTHING",
-        &[&player_id],
+        &[&player_id, &granted_by],
     )
     .await
-    .map_err(|e| transient_query_error("Failed to ensure player_info row", e))?;
+    .map_err(|e| transient_query_error("Failed to ensure player_info rows", e))?;
 
     tx.execute(
-        "INSERT INTO skua_master.player_certs (steam_id, cert_id)
-         VALUES ($1, $2)
+        "INSERT INTO skua_master.player_certs (steam_id, cert_id, granted_by)
+         VALUES ($1, $2, $3)
          ON CONFLICT DO NOTHING",
-        &[&player_id, &cert_id],
+        &[&player_id, &cert_id, &granted_by],
     )
     .await
     .map_err(|e| transient_query_error("Failed to grant certification", e))?;
