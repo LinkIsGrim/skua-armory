@@ -87,6 +87,41 @@ mod wire_format {
         );
         assert_eq!(obj["cert_id"], "pilot");
     }
+
+    /// `certification:get_player` callback payload carries the queried
+    /// `player_id` alongside the cert id list so the SQF callback can route
+    /// the response back to whichever player it asked about. Lock the JSON
+    /// keys + `player_id` stringification through the IntoArma impl on
+    /// `PlayerCerts`.
+    #[test]
+    fn get_player_callback_payload_shape() {
+        use super::super::types::PlayerCerts;
+        use crate::domain::PlayerId;
+        use arma_rs::IntoArma;
+
+        let payload = PlayerCerts {
+            player_id: PlayerId::new(76_561_198_000_000_000),
+            cert_ids: vec!["pilot".into(), "medic".into()],
+        };
+
+        let value = payload.to_arma();
+        let arma_rs::Value::String(json) = value else {
+            panic!("expected JSON string, got {value:?}");
+        };
+
+        let parsed: serde_json::Value = serde_json::from_str(&json).expect("parse back");
+        let obj = parsed.as_object().expect("object");
+        assert_eq!(obj.len(), 2, "exactly two fields expected");
+        assert_eq!(obj["player_id"], "76561198000000000");
+        assert!(
+            obj["player_id"].is_string(),
+            "player_id must serialize as a JSON string for BIS_fnc_getUnitByUID"
+        );
+        let cert_ids = obj["cert_ids"].as_array().expect("cert_ids is array");
+        assert_eq!(cert_ids.len(), 2);
+        assert_eq!(cert_ids[0], "pilot");
+        assert_eq!(cert_ids[1], "medic");
+    }
 }
 
 #[cfg(test)]

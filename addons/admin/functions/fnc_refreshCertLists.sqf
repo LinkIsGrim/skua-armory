@@ -3,17 +3,18 @@
 /*
  * Author: LinkIsGrim
  * Repopulates the Held and Available cert listboxes for the currently
- * selected player. Projects the pending change queue onto the underlying
- * persistent/temp holdings so the admin sees the *result* of clicking Grant
- * / Revoke immediately, with a `*` suffix marking entries that are still
- * uncommitted.
+ * selected player. Sources cert state from one of two places depending on
+ * whether the grantee is online:
+ *  - online:  unit setVariables (skua_certifications_list + tempCerts).
+ *  - offline: uiNamespace cache populated by fnc_onCertificationGetPlayerCallback.
+ *             Triggers a lazy fetch if the cache misses; placeholder text shows
+ *             until the callback arrives.
  *
- * Held = projected persistent (plain label) + projected temp (with [T]
- * prefix). Available = static cert list minus projected persistent;
- * projected-temp entries stay listed with `(promote)`.
- *
- * No-op if the dialog isn't open. lbData on each row stores the cert id so
- * the click handlers can read it without a separate id<->index map.
+ * Projects the pending change queue onto the underlying persistent/temp
+ * holdings so the admin sees the *result* of clicking Grant / Revoke
+ * immediately, with a `*` suffix marking uncommitted entries. Temp
+ * grant/revoke buttons are disabled for offline grantees (no unit to attach
+ * tempCerts to, and temp-revoke has no DB row to remove).
  *
  * Arguments:
  * None.
@@ -34,17 +35,35 @@ private _availList = _display displayCtrl IDC_ADMINCERT_AVAILABLE_LIST;
 lbClear _heldList;
 lbClear _availList;
 
+// Selection in either cert listbox is wiped by lbClear, so the focused-list
+// pointer is stale until the admin clicks something again.
+_display setVariable [QGVAR(focusedCertList), -1];
+
 private _selIdx = lbCurSel _playerList;
-if (_selIdx < 0) exitWith {};
+if (_selIdx < 0) exitWith {
+    call FUNC(updateActionButtons);
+};
 
 private _granteeUID = _playerList lbData _selIdx;
 private _grantee = _granteeUID call BIS_fnc_getUnitByUID;
-if (isNull _grantee) exitWith {
-    TRACE_1("Selected grantee not present locally",_granteeUID);
-};
+private _isOnline = !isNull _grantee;
 
-private _persistentCerts = +(_grantee getVariable [QEGVAR(certifications,list), []]);
-private _tempCerts = +(_grantee getVariable [QEGVAR(certifications,tempCerts), []]);
+private _persistentCerts = [];
+private _tempCerts = [];
+
+if (_isOnline) then {
+    _persistentCerts = +(_grantee getVariable [QEGVAR(certifications,list), []]);
+    _tempCerts = +(_grantee getVariable [QEGVAR(certifications,tempCerts), []]);
+} else {
+    // Offline source: uiNamespace cache. Lazy-fetch on miss.
+    private _cache = uiNamespace getVariable [QGVAR(offlineCerts), createHashMap];
+    if (_cache getOrDefault [_granteeUID, "MISS"] isEqualTo "MISS") exitWith {
+        _heldList lbAdd "Loading...";
+        [_granteeUID] call FUNC(fetchOfflineCerts);
+    };
+    _persistentCerts = +(_cache get _granteeUID);
+    // _tempCerts stays empty — temp grants don't exist for offline players.
+};
 
 // Project pending changes. Track every cert id that has at least one pending
 // op for the current grantee so we can `*`-decorate it in either listbox.
@@ -115,3 +134,5 @@ private _decorate = {
         _availList lbSetData [_idx, _id];
     };
 } forEach _certList;
+
+call FUNC(updateActionButtons);

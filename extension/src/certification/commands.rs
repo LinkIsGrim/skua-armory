@@ -18,7 +18,7 @@ use arma_rs::{Context, Group};
 use tokio_postgres::Client;
 use tracing::{error, instrument};
 
-use super::types::Certification;
+use super::types::{Certification, PlayerCerts};
 use crate::core::RUNTIME;
 use crate::database::get_client;
 use crate::domain::PlayerId;
@@ -140,7 +140,7 @@ fn get_player(ctx: Context, player_id: PlayerId) -> QueryState {
     QueryState::Processing
 }
 
-async fn run_get_player(player_id: PlayerId) -> QueryOutcome<Vec<String>> {
+async fn run_get_player(player_id: PlayerId) -> QueryOutcome<PlayerCerts> {
     let client = match get_client().await {
         Ok(c) => c,
         Err(e) => {
@@ -148,7 +148,10 @@ async fn run_get_player(player_id: PlayerId) -> QueryOutcome<Vec<String>> {
         }
     };
     match get_player_inner(&client, player_id).await {
-        Ok(rows) => QueryOutcome::Done(rows),
+        Ok(cert_ids) => QueryOutcome::Done(PlayerCerts {
+            player_id,
+            cert_ids,
+        }),
         Err(err) => QueryOutcome::Failed(err),
     }
 }

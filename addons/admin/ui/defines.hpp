@@ -7,12 +7,16 @@
 #define IDC_ADMINCERT_HELD_LIST        14712
 #define IDC_ADMINCERT_AVAILABLE_LIST   14713
 
-#define IDC_ADMINCERT_BTN_GRANT        14720
-#define IDC_ADMINCERT_BTN_GRANT_TEMP   14721
-#define IDC_ADMINCERT_BTN_REVOKE       14722
-#define IDC_ADMINCERT_BTN_REVOKE_TEMP  14723
+// One pair of action buttons; their label + behavior changes based on which
+// cert listbox (Held vs Available) was clicked last. See fnc_updateActionButtons.
+#define IDC_ADMINCERT_BTN_ACTION       14720
+#define IDC_ADMINCERT_BTN_ACTION_TEMP  14721
 #define IDC_ADMINCERT_BTN_CLOSE        14724
 #define IDC_ADMINCERT_BTN_COMMIT       14725
+#define IDC_ADMINCERT_BTN_REFRESH      14726
+
+#define IDC_ADMINCERT_CHK_ONLINE_ONLY        14740
+#define IDC_ADMINCERT_CHK_ONLINE_ONLY_LABEL  14741
 
 #define IDC_ADMINCERT_TITLE            14730
 #define IDC_ADMINCERT_HELD_TITLE       14731

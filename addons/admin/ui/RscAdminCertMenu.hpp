@@ -7,6 +7,8 @@ class RscText;
 class RscTitle;
 class RscListBox;
 class RscButtonMenu;
+class RscCheckBox;
+class RscActivePicture;
 
 // POS_X/POS_Y are anchored on the 40-column, 25-row GUI_GRID_CENTER zone.
 // Stay inside [0, 40] horizontally and [0, 25] vertically or controls fall
@@ -31,10 +33,19 @@ class RscButtonMenu;
 
 // Y bands.
 #define ACM_BODY_Y          (ACM_TITLE_H + 0.2)
-#define ACM_LIST_HEADER_H   0.8
+#define ACM_LIST_HEADER_H   1.0
 #define ACM_LIST_BODY_Y     (ACM_BODY_Y + ACM_LIST_HEADER_H)
 #define ACM_LIST_H          (ACM_H - ACM_LIST_BODY_Y - ACM_BTN_H - 0.4)
 #define ACM_BTN_ROW_Y       (ACM_H - ACM_BTN_H)
+
+// Header-row controls in the Player column.
+//   [ ☐ ] Online only ........... [↻]
+// Checkbox is a 1x1 square (RscCheckBox has no built-in text); the label is a
+// separate RscText with onMouseButtonClick wired so clicking it toggles the
+// box too. Refresh icon sits flush-right.
+#define ACM_REFRESH_ICON_W  1
+#define ACM_CHK_BOX_W       1
+#define ACM_CHK_LABEL_W     (ACM_COL_PLAYER_W - ACM_CHK_BOX_W - ACM_REFRESH_ICON_W - 0.4)
 
 // Top-level config class — createDialog finds root-level classes from any
 // loaded addon. ACE3's cargo/menu and similar dialogs use the same pattern.
@@ -74,11 +85,38 @@ class skua_admin_AdminCertMenu {
             h = QUOTE(POS_H(ACM_TITLE_H));
         };
 
-        class PlayerHeader: RscText {
-            text = "Players";
+        // "Online only" checkbox + label. Default ON via fnc_onCertMenuOpen.
+        // Label click toggles the box (RscCheckBox has no built-in text).
+        class PlayerHeader: RscCheckBox {
+            idc = IDC_ADMINCERT_CHK_ONLINE_ONLY;
+            tooltip = "Show online players only. Uncheck to include everyone who's ever played.";
+            onCheckedChanged = QUOTE(call FUNC(refreshCertMenu));
             x = QUOTE(POS_X(ACM_X + ACM_COL_PLAYER_X));
             y = QUOTE(POS_Y(ACM_Y + ACM_BODY_Y));
-            w = QUOTE(POS_W(ACM_COL_PLAYER_W));
+            w = QUOTE(POS_W(ACM_CHK_BOX_W));
+            h = QUOTE(POS_H(ACM_LIST_HEADER_H));
+        };
+        class PlayerHeaderLabel: RscText {
+            idc = IDC_ADMINCERT_CHK_ONLINE_ONLY_LABEL;
+            text = "Online only";
+            tooltip = "Show online players only. Uncheck to include everyone who's ever played.";
+            x = QUOTE(POS_X(ACM_X + ACM_COL_PLAYER_X + ACM_CHK_BOX_W + 0.2));
+            y = QUOTE(POS_Y(ACM_Y + ACM_BODY_Y));
+            w = QUOTE(POS_W(ACM_CHK_LABEL_W));
+            h = QUOTE(POS_H(ACM_LIST_HEADER_H));
+        };
+        // Square icon-only button — flush-right in the Player column header.
+        // Clicking re-fires the roster fetch via the server.
+        class RefreshIcon: RscActivePicture {
+            idc = IDC_ADMINCERT_BTN_REFRESH;
+            text = "DBUG\pictures\reload.paa";
+            tooltip = "Refresh roster";
+            onButtonClick = QUOTE(call FUNC(fetchPlayerRoster));
+            color[] = {1, 1, 1, 1};
+            colorActive[] = {1, 1, 1, 0.7};
+            x = QUOTE(POS_X(ACM_X + ACM_COL_PLAYER_W - ACM_REFRESH_ICON_W));
+            y = QUOTE(POS_Y(ACM_Y + ACM_BODY_Y));
+            w = QUOTE(POS_W(ACM_REFRESH_ICON_W));
             h = QUOTE(POS_H(ACM_LIST_HEADER_H));
         };
         class PlayerList: RscListBox {
@@ -89,11 +127,13 @@ class skua_admin_AdminCertMenu {
             h = QUOTE(POS_H(ACM_LIST_H));
         };
 
-        class HeldHeader: PlayerHeader {
+        class HeldHeader: RscText {
             idc = IDC_ADMINCERT_HELD_TITLE;
             text = "Held Certs";
             x = QUOTE(POS_X(ACM_X + ACM_COL_HELD_X));
+            y = QUOTE(POS_Y(ACM_Y + ACM_BODY_Y));
             w = QUOTE(POS_W(ACM_COL_HELD_W));
+            h = QUOTE(POS_H(ACM_LIST_HEADER_H));
         };
         class HeldList: PlayerList {
             idc = IDC_ADMINCERT_HELD_LIST;
@@ -101,7 +141,7 @@ class skua_admin_AdminCertMenu {
             w = QUOTE(POS_W(ACM_COL_HELD_W));
         };
 
-        class AvailHeader: PlayerHeader {
+        class AvailHeader: HeldHeader {
             idc = IDC_ADMINCERT_AVAILABLE_TITLE;
             text = "Available Certs";
             x = QUOTE(POS_X(ACM_X + ACM_COL_AVAIL_X));
@@ -113,32 +153,26 @@ class skua_admin_AdminCertMenu {
             w = QUOTE(POS_W(ACM_COL_AVAIL_W));
         };
 
-        class BtnRevoke: RscButtonMenu {
-            idc = IDC_ADMINCERT_BTN_REVOKE;
-            text = "Revoke";
-            onButtonClick = QUOTE([false] call FUNC(onCertMenuRevokeClicked));
-            x = QUOTE(POS_X(ACM_X + ACM_COL_HELD_X));
+        // One pair of action buttons flush-right under the Available column.
+        // Their label + behavior changes based on which cert listbox (Held
+        // or Available) was clicked last — Held → Revoke / Revoke (temp),
+        // Available → Grant / Grant (temp). fnc_updateActionButtons keeps
+        // them in sync; fnc_onCertMenuActionClicked routes the queue op.
+        // Disabled until a cert is selected in either list.
+        class BtnActionTemp: RscButtonMenu {
+            idc = IDC_ADMINCERT_BTN_ACTION_TEMP;
+            text = "Grant (temp)";
+            onButtonClick = QUOTE([true] call FUNC(onCertMenuActionClicked));
+            x = QUOTE(POS_X(ACM_X + ACM_W - ACM_BTN_W));
             y = QUOTE(POS_Y(ACM_Y + ACM_BTN_ROW_Y));
             w = QUOTE(POS_W(ACM_BTN_W));
             h = QUOTE(POS_H(ACM_BTN_H));
         };
-        class BtnRevokeTemp: BtnRevoke {
-            idc = IDC_ADMINCERT_BTN_REVOKE_TEMP;
-            text = "Revoke (temp)";
-            onButtonClick = QUOTE([true] call FUNC(onCertMenuRevokeClicked));
-            x = QUOTE(POS_X(ACM_X + ACM_COL_HELD_X + ACM_BTN_W + 0.2));
-        };
-        class BtnGrant: BtnRevoke {
-            idc = IDC_ADMINCERT_BTN_GRANT;
+        class BtnAction: BtnActionTemp {
+            idc = IDC_ADMINCERT_BTN_ACTION;
             text = "Grant";
-            onButtonClick = QUOTE([false] call FUNC(onCertMenuGrantClicked));
-            x = QUOTE(POS_X(ACM_X + ACM_COL_AVAIL_X));
-        };
-        class BtnGrantTemp: BtnRevoke {
-            idc = IDC_ADMINCERT_BTN_GRANT_TEMP;
-            text = "Grant (temp)";
-            onButtonClick = QUOTE([true] call FUNC(onCertMenuGrantClicked));
-            x = QUOTE(POS_X(ACM_X + ACM_COL_AVAIL_X + ACM_BTN_W + 0.2));
+            onButtonClick = QUOTE([false] call FUNC(onCertMenuActionClicked));
+            x = QUOTE(POS_X(ACM_X + ACM_W - ACM_BTN_W*2 - 0.2));
         };
 
         // Close + Commit sit in the Player column's button row. Close runs a

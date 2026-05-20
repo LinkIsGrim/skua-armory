@@ -5,12 +5,14 @@
  * fnc_handleGrantRequest:
  *   - persistent: forwards to the extension's `certification:revoke` (deletes
  *     from skua_master.player_certs; the resulting QEV_CERTIFICATION_REVOKED
- *     event propagates).
- *   - temp: runs the cert's revoke_event on the grantee and removes the cert
- *     id from QEGVAR(certifications,tempCerts). Refuses if the cert is also
- *     present in the persistent QEGVAR(certifications,list) — those must be
- *     revoked persistently to avoid leaving the DB row orphaned with the
- *     perk torn down.
+ *     event propagates). Online grantees also get the optimistic local event
+ *     so revoke_event applies without waiting for the DB.
+ *   - temp: runs the cert's revoke_event and removes the cert id from
+ *     QEGVAR(certifications,tempCerts). Refuses if the cert is in the
+ *     persistent list (must be revoked persistently). Requires a live unit.
+ *
+ * Offline grantees can still receive persistent revokes; the DB row is
+ * deleted and the optimistic local event is skipped (no unit to tear down).
  *
  * Arguments:
  * 0: Grantee Steam UID <STRING>
@@ -36,27 +38,30 @@ if (isNil "_certData") exitWith {
 };
 
 private _grantee = _granteeUID call BIS_fnc_getUnitByUID;
-if (isNull _grantee) exitWith {
-    ERROR_2("Cannot locate grantee unit for UID %1 (cert %2)",_granteeUID,_certID);
-};
+private _isOnline = !isNull _grantee;
 
 if (_persistent) exitWith {
-    INFO_3("Admin %1 revoking persistent cert %2 from %3",_granterUID,_certID,_granteeUID);
-
-    // Optimistic event so the revoke_event applies and admin menus refresh
-    // without waiting for the extension's DELETE to land. The extension
-    // re-emits after the DELETE completes; revoke_event is idempotent and
-    // processRevoke's `_persistentCerts - [_certID]` is a no-op the second
-    // time through.
-    [
-        QEV_CERTIFICATION_REVOKED,
-        [createHashMapFromArray [["player_id", _granteeUID], ["cert_id", _certID]]]
-    ] call CBA_fnc_localEvent;
+    if (_isOnline) then {
+        INFO_3("Admin %1 revoking persistent cert %2 from %3",_granterUID,_certID,_granteeUID);
+        // Optimistic local event so revoke_event applies and menus refresh
+        // without waiting for the DELETE. Extension re-emits after the DB op
+        // completes; revoke_event is idempotent.
+        [
+            QEV_CERTIFICATION_REVOKED,
+            [createHashMapFromArray [["player_id", _granteeUID], ["cert_id", _certID]]]
+        ] call CBA_fnc_localEvent;
+    } else {
+        INFO_3("Admin %1 revoking persistent cert %2 from offline player %3",_granterUID,_certID,_granteeUID);
+    };
 
     "skua" callExtension ["certification:revoke", [_granteeUID, _certID]];
 };
 
-// Temp revoke path.
+// Temp revoke path. Requires a live unit.
+if (!_isOnline) exitWith {
+    WARNING_2("Rejecting temp revoke for offline player %1 (cert %2)",_granteeUID,_certID);
+};
+
 private _persistentCerts = _grantee getVariable [QEGVAR(certifications,list), []];
 if (_certID in _persistentCerts) exitWith {
     WARNING_3("Admin %1 attempted temp-revoke of persistent cert %2 from %3 — refused",_granterUID,_certID,_granteeUID);

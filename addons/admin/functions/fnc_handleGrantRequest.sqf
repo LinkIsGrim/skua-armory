@@ -5,13 +5,17 @@
  * admin and the cert exists, then either:
  *   - persistent: forwards to the extension's `certification:grant` (writes
  *     to skua_master.player_certs, fires QEV_CERTIFICATION_GRANTED via the
- *     unified event channel which propagates to clients as _GLOBAL),
- *   - temp: globally fires QEV_CERTIFICATION_GRANTED_GLOBAL with the same
- *     payload shape AND appends the cert id to the grantee's
- *     QEGVAR(certifications,tempCerts) variable (broadcast), then runs the
- *     cert's grant_event so perks apply. Does NOT touch
- *     QEGVAR(certifications,list) — temp grants are tracked separately so
- *     they don't survive reconnect.
+ *     unified event channel which propagates to clients as _GLOBAL).
+ *     For online grantees, also fires the canonical event locally as an
+ *     optimistic short-circuit so the perk applies without waiting for the
+ *     DB round-trip.
+ *   - temp: appends the cert id to the grantee's tempCerts variable, runs
+ *     the cert's grant_event, and globalEvents the _GLOBAL refresh hook.
+ *     Temp grants require a live unit — rejected for offline grantees.
+ *
+ * Offline grantees can still receive persistent grants; the cert hydrates on
+ * their next connect via push_player_certs and the optimistic local event is
+ * skipped (no unit to apply perks to anyway).
  *
  * Arguments:
  * 0: Grantee Steam UID <STRING>
@@ -37,36 +41,42 @@ if (isNil "_certData") exitWith {
 };
 
 private _grantee = _granteeUID call BIS_fnc_getUnitByUID;
-if (isNull _grantee) exitWith {
-    ERROR_2("Cannot locate grantee unit for UID %1 (cert %2)",_granteeUID,_certID);
-};
+private _isOnline = !isNull _grantee;
 
 if (_persistent) exitWith {
-    // If this cert was previously temp-granted, clear it from tempCerts so
-    // it doesn't double-count once the persistent grant lands.
-    private _tempCerts = _grantee getVariable [QEGVAR(certifications,tempCerts), []];
-    if (_certID in _tempCerts) then {
-        _tempCerts = _tempCerts - [_certID];
-        _grantee setVariable [QEGVAR(certifications,tempCerts), _tempCerts, true];
-        INFO_3("Admin %1 promoting temp cert %2 on %3 to persistent",_granterUID,_certID,_granteeUID);
-    } else {
-        INFO_3("Admin %1 granting persistent cert %2 to %3",_granterUID,_certID,_granteeUID);
-    };
+    // If this cert was previously temp-granted (only possible while online),
+    // clear it from tempCerts so it doesn't double-count once the persistent
+    // grant lands.
+    if (_isOnline) then {
+        private _tempCerts = _grantee getVariable [QEGVAR(certifications,tempCerts), []];
+        if (_certID in _tempCerts) then {
+            _tempCerts = _tempCerts - [_certID];
+            _grantee setVariable [QEGVAR(certifications,tempCerts), _tempCerts, true];
+            INFO_3("Admin %1 promoting temp cert %2 on %3 to persistent",_granterUID,_certID,_granteeUID);
+        } else {
+            INFO_3("Admin %1 granting persistent cert %2 to %3",_granterUID,_certID,_granteeUID);
+        };
 
-    // Fire the canonical event optimistically so the perk applies and admin
-    // menus refresh without waiting for the extension's DB round-trip. The
-    // extension will re-emit the same event after the INSERT lands; the
-    // grant_event is idempotent and processGrant's pushBackUnique swallows
-    // the duplicate on QGVAR(list).
-    [
-        QEV_CERTIFICATION_GRANTED,
-        [createHashMapFromArray [["player_id", _granteeUID], ["cert_id", _certID]]]
-    ] call CBA_fnc_localEvent;
+        // Optimistic local event — only fires for online grantees because
+        // processGrant needs the unit to run grant_event and update the
+        // setVariable. Offline grantees pick the cert up on next connect via
+        // push_player_certs.
+        [
+            QEV_CERTIFICATION_GRANTED,
+            [createHashMapFromArray [["player_id", _granteeUID], ["cert_id", _certID]]]
+        ] call CBA_fnc_localEvent;
+    } else {
+        INFO_3("Admin %1 granting persistent cert %2 to offline player %3",_granterUID,_certID,_granteeUID);
+    };
 
     "skua" callExtension ["certification:grant", [_granteeUID, _certID, _granterUID]];
 };
 
-// Temp grant path.
+// Temp grant path. Requires a live unit.
+if (!_isOnline) exitWith {
+    WARNING_2("Rejecting temp grant for offline player %1 (cert %2)",_granteeUID,_certID);
+};
+
 private _tempCerts = _grantee getVariable [QEGVAR(certifications,tempCerts), []];
 if (_certID in _tempCerts) exitWith {
     INFO_2("Cert %1 already temp-granted to %2, skipping",_certID,_granteeUID);
