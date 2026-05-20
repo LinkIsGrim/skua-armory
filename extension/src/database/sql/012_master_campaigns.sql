@@ -7,5 +7,6 @@ CREATE TABLE IF NOT EXISTS skua_master.campaigns (
     persist_medical     BOOLEAN NOT NULL DEFAULT FALSE,
     persist_loadout     BOOLEAN NOT NULL DEFAULT FALSE,
     using_shop          BOOLEAN NOT NULL DEFAULT FALSE,
-    persisting_world_data BOOLEAN NOT NULL DEFAULT FALSE
+    persisting_world_data BOOLEAN NOT NULL DEFAULT FALSE,
+    default_loadout     TEXT
 );

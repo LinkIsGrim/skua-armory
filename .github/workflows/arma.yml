@@ -31,6 +31,8 @@ jobs:
     steps:
     - name: Checkout the source code
       uses: actions/checkout@v6
+      with:
+        submodules: recursive
     - name: Setup HEMTT
       uses: arma-actions/hemtt@v1
       with:

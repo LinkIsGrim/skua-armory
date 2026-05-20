@@ -18,6 +18,11 @@ static CAMPAIGN_KEY_RE: LazyLock<Regex> =
 
 /// Sanitizes a key for use as a schema name. Errors if the key doesn't match
 /// `^[a-z0-9_]{3,49}$` (after lowercasing and replacing `-`/space with `_`).
+///
+/// # Errors
+/// Returns an error if the sanitized key doesn't match the expected pattern.
+/// This is to prevent SQL injection via the `${campaign_id}` interpolation in the
+/// campaign schema creation statements.
 pub fn sanitize_key(key: &str) -> Result<String, &'static str> {
     let key = key.replace(['-', ' '], "_").to_lowercase();
 
@@ -51,6 +56,7 @@ pub(crate) async fn bootstrap_schema(client: &Client) -> Result<(), QueryResult>
         (master::RANKS, "ranks table"),
         (master::CERTIFICATIONS, "certifications table"),
         (master::CAMPAIGNS, "campaigns table"),
+        (master::CAMPAIGNS_ALTER, "campaigns table forward-compat"),
         (master::PLAYER_INFO, "player_info table"),
         (master::PLAYER_INFO_IDX_ADMIN, "admin index"),
         (master::PLAYER_INFO_IDX_BANNED, "banned index"),
@@ -98,7 +104,7 @@ pub(super) async fn bootstrap_master(client: &Client) -> Result<(), QueryResult>
 }
 
 #[instrument(level = "debug", name = "bootstrap_campaign", skip(client))]
-pub(super) async fn bootstrap_campaign(
+pub(crate) async fn bootstrap_campaign(
     client: &Client,
     campaign_id: &str,
 ) -> Result<(), QueryResult> {

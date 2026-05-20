@@ -1,3 +1,6 @@
 [workspace]
 members = ["extension"]
 resolver = "3"
+
+[patch.crates-io]
+arma-rs = { path = "third_party/arma-rs/arma-rs" }

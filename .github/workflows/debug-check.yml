@@ -13,6 +13,8 @@ jobs:
     steps:
     - name: Checkout the source code
       uses: actions/checkout@v6
+      with:
+        submodules: recursive
 
     - name: Check for uncommented debug macros
       run: bash tools/check_debug_macros.sh

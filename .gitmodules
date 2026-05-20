@@ -1,0 +1,4 @@
+[submodule "third_party/arma-rs"]
+	path = third_party/arma-rs
+	url = https://github.com/LinkIsGrim/arma-rs.git
+	branch = fix/loadout_into_arma

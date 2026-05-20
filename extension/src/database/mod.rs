@@ -19,6 +19,7 @@ pub use player::PlayerInfo;
 #[cfg(test)]
 pub(crate) use pool::start_test_db;
 pub use pool::{Database, DbSettings, get_client, get_db, get_state};
+pub use schema::sanitize_key;
 #[cfg(test)]
-pub(crate) use schema::bootstrap_schema;
+pub(crate) use schema::{bootstrap_campaign, bootstrap_schema};
 pub use state::DatabaseState;
