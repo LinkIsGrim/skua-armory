@@ -31,6 +31,9 @@ if !(_targetClientUID in GVAR(clientAddonMap)) exitWith {
     _namespace setVariable [_varName, [[], []]]; // Send empty lists
 };
 
-private _addonLists = GVAR(clientAddonMap) get _targetClientUID;
+// clientAddonMap entries are [extras, missing, extrasModMap]; per-player
+// getter only exposes [extras, missing] to keep the legacy contract.
+(GVAR(clientAddonMap) get _targetClientUID) params ["_extras", "_missing"];
+private _addonLists = [_extras, _missing];
 INFO_3("Sending addon list of client UID %1 to admin UID %2: %3",_targetClientUID,_requestingAdminUID,_addonLists);
 _namespace setVariable [_varName, _addonLists, _requestOwnerMachineID];

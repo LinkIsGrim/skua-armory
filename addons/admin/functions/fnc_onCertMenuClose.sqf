@@ -1,8 +1,9 @@
 #include "..\script_component.hpp"
 /*
  * Author: LinkIsGrim
- * Dialog onUnload handler. No state to clean up — refresh handlers are
- * idempotent and short-circuit when findDisplay returns null.
+ * Dialog onUnload handler. Removes the addonMapLoaded listener wired in
+ * fnc_onAdminMenuOpen. Refresh handlers are idempotent and short-circuit
+ * when findDisplay returns null.
  *
  * Arguments:
  * 0: Display <DISPLAY>
@@ -13,3 +14,10 @@
  *
  * Public: No
  */
+
+params ["_display"];
+
+private _addonMapListener = _display getVariable [QGVAR(addonMapListener), -1];
+if (_addonMapListener >= 0) then {
+    [QGVAR(addonMapLoaded), _addonMapListener] call CBA_fnc_removeEventHandler;
+};

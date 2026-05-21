@@ -19,7 +19,7 @@ class CfgPatches {
 #include "CfgEventHandlers.hpp"
 #include "CfgDebriefing.hpp"
 #include "CfgVehicles.hpp"
-#include "ui\RscAdminCertMenu.hpp"
+#include "ui\RscAdminMenu.hpp"
 
 enableDebugConsole[] = { // TODO: Replace with database lookup at runtime
     "76561198027717871", //Picker

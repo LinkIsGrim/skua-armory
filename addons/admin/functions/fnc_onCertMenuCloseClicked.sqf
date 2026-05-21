@@ -14,7 +14,7 @@
  * Public: No
  */
 
-private _display = findDisplay IDD_ADMIN_CERT_MENU;
+private _display = findDisplay IDD_ADMIN_MENU;
 if (isNull _display) exitWith {};
 
 private _pending = _display getVariable [QGVAR(pendingChanges), createHashMap];
@@ -38,7 +38,7 @@ if (_pendingCount == 0) exitWith {
     {
         params ["", "_exitCode"];
         if (_exitCode == 1) then {
-            private _adminMenu = findDisplay IDD_ADMIN_CERT_MENU;
+            private _adminMenu = findDisplay IDD_ADMIN_MENU;
             if (!isNull _adminMenu) then {
                 _adminMenu closeDisplay 0;
             };

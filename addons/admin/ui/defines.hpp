@@ -1,7 +1,10 @@
-// IDC/IDD constants for the admin cert menu dialog.
+// IDC/IDD constants for the admin menu dialog.
 // IDD chosen high enough to avoid collision with engine displays.
 
-#define IDD_ADMIN_CERT_MENU            14710
+#define IDD_ADMIN_MENU                 14710
+// Backwards-compat alias — older references read the cert menu by this name.
+// Both IDDs resolve to the same dialog; do not duplicate-define elsewhere.
+#define IDD_ADMIN_CERT_MENU            IDD_ADMIN_MENU
 
 #define IDC_ADMINCERT_PLAYER_LIST      14711
 #define IDC_ADMINCERT_HELD_LIST        14712
@@ -21,6 +24,21 @@
 #define IDC_ADMINCERT_TITLE            14730
 #define IDC_ADMINCERT_HELD_TITLE       14731
 #define IDC_ADMINCERT_AVAILABLE_TITLE  14732
+
+// Tab bar + Addons panel.
+#define IDC_ADMINMENU_BTN_TAB_CERTS    14750
+#define IDC_ADMINMENU_BTN_TAB_ADDONS   14751
+
+#define IDC_ADMINMENU_MISSING_TITLE       14752
+#define IDC_ADMINMENU_MISSING_LIST        14753
+#define IDC_ADMINMENU_EXTRA_MODS_TITLE    14754
+#define IDC_ADMINMENU_EXTRA_MODS_LIST     14755
+#define IDC_ADMINMENU_EXTRA_ADDONS_TITLE  14756
+#define IDC_ADMINMENU_EXTRA_ADDONS_LIST   14757
+
+// Tab IDs used in QGVAR(activeTab).
+#define ADMIN_TAB_CERTS  0
+#define ADMIN_TAB_ADDONS 1
 
 #define COLOR_BCG { \
     "(profilenamespace getVariable ['GUI_BCG_RGB_R',0.13])", \
