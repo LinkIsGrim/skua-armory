@@ -3,9 +3,13 @@
 
 if (isServer) then {
     GVAR(admins) = getArray (configFile >> "enableDebugConsole");
+    GVAR(adminPlayers) = [];
     if (!isMultiplayer) then {
-        // In singleplayer, the only player is an admin
+        // In singleplayer, the only player is an admin. clientConnected isn't
+        // fired in SP (see addons/common/functions/fnc_notifyClientConnected.sqf),
+        // so we seed the admin player roster directly.
         GVAR(admins) pushBack getPlayerUID player;
+        GVAR(adminPlayers) pushBackUnique player;
     };
 
     [QACEGVAR(zeus,createZeus), {
@@ -25,18 +29,48 @@ if (isServer) then {
 
     [QEGVAR(common,clientConnected), LINKFUNC(createAdminZeus)] call CBA_fnc_addEventHandler;
 
+    // Roster of currently-connected admin player units drives fnc_adminEvent
+    // so admin-only payloads (addon mismatch map, roster, offline certs)
+    // never land on regular clients. Initialized above; populated here as
+    // admins join.
+    [QEGVAR(common,clientConnected), {
+        params ["_uid", "_hasInterface", "_player"];
+        if (!_hasInterface) exitWith {}; // Headless: no UI, no admin.
+        if (_uid in GVAR(admins)) then {
+            GVAR(adminPlayers) pushBackUnique _player;
+        };
+    }] call CBA_fnc_addEventHandler;
+
+    // Forward handler: lets non-server callers raise admin events; the server
+    // re-fans out via targetEvent.
+    [QGVAR(adminEventForward), {
+        params ["_eventName", "_args"];
+        [_eventName, _args] call FUNC(adminEvent);
+    }] call CBA_fnc_addEventHandler;
+
     GVAR(serverAddons) = cba_common_addons;
 
-    // Map structure: UID (STRING) -> ARRAY of ARRAY of STRING: [extraAddons, missingAddons]
+    // Map structure: UID (STRING) -> [extraAddons, missingAddons, extrasModMap]
+    // where extrasModMap is HASHMAP<addonClass, [modDir, modName]> (client-resolved
+    // because the server doesn't have the extras loaded).
     GVAR(clientAddonMap) = createHashMap;
 
     // Addon monitoring
     [QGVAR(addons), LINKFUNC(onClientAddons)] call CBA_fnc_addEventHandler;
     [QGVAR(requestClientAddons), LINKFUNC(handleRequestClientAddons)] call CBA_fnc_addEventHandler;
+    [QGVAR(requestClientAddonMap), LINKFUNC(handleFetchClientAddonMapRequest)] call CBA_fnc_addEventHandler;
 
     addMissionEventHandler ["PlayerDisconnected", {
         params ["", "_uid"];
         GVAR(clientAddonMap) deleteAt _uid;
+        // Prune the leaver from the admin-fan-out roster (the object may
+        // already be null at this point — filter both conditions).
+        GVAR(adminPlayers) = GVAR(adminPlayers) select {
+            !isNull _x && {getPlayerUID _x != _uid}
+        };
+        // Fan out to admin clients only — we don't use QEV_PLAYER_DISCONNECTED
+        // (DB-gated) and we don't want non-admins to receive this either.
+        [QGVAR(clientDisconnected), [_uid]] call FUNC(adminEvent);
     }];
 
     [QGVAR(grantRequest), LINKFUNC(handleGrantRequest)] call CBA_fnc_addEventHandler;
@@ -51,6 +85,10 @@ if (isServer) then {
 };
 
 call FUNC(sendClientAddons);
+
+// Disconnect fan-out lands on every machine; admin clients prune their
+// uiNamespace cache. No-op on machines that never opened the Addons tab.
+[QGVAR(clientDisconnected), LINKFUNC(onClientDisconnected)] call CBA_fnc_addEventHandler;
 
 if (hasInterface) then {
     // Refresh the open admin cert menu (no-op if closed) whenever cert state
@@ -71,7 +109,7 @@ if (hasInterface) then {
         if (_uid in _cache) then {
             (_cache get _uid) pushBackUnique _certId;
         };
-        call FUNC(refreshCertMenu);
+        call FUNC(refreshPlayerList);
     }] call CBA_fnc_addEventHandler;
     [QEV_CERTIFICATION_REVOKED_GLOBAL, {
         params ["_data"];
@@ -81,23 +119,28 @@ if (hasInterface) then {
         if (_uid in _cache) then {
             _cache set [_uid, (_cache get _uid) - [_certId]];
         };
-        call FUNC(refreshCertMenu);
+        call FUNC(refreshPlayerList);
     }] call CBA_fnc_addEventHandler;
-    [QEV_CERTIFICATION_LIST_CHANGED_GLOBAL, {call FUNC(refreshCertMenu)}] call CBA_fnc_addEventHandler;
+    [QEV_CERTIFICATION_LIST_CHANGED_GLOBAL, {call FUNC(refreshPlayerList)}] call CBA_fnc_addEventHandler;
 
     // Roster + offline-cert fetches: server callExtension → server
     // ExtensionCallback adapter globalEvents the parsed payload here.
     [QGVAR(rosterPushed), LINKFUNC(onPlayerInfoListCallback)] call CBA_fnc_addEventHandler;
     [QGVAR(offlineCertsPushed), LINKFUNC(onCertificationGetPlayerCallback)] call CBA_fnc_addEventHandler;
+    // Bulk addon-map response (admin → server → admin) for the Addon List tab.
+    [QGVAR(clientAddonMapPushed), LINKFUNC(onClientAddonMapCallback)] call CBA_fnc_addEventHandler;
+    // Addon-map cache changed — refresh the open Admin Menu's Addons tab.
+    // refreshAddonLists no-ops when the dialog isn't open.
+    [QGVAR(addonMapLoaded), {call FUNC(refreshAddonLists)}] call CBA_fnc_addEventHandler;
 
     // Cache-arrival hooks: when a roster or offline-cert fetch lands, refresh
     // the open menu (no-op when closed). Cert refresh only runs if the newly
     // arrived UID matches the currently selected player — avoids gratuitous
     // listbox rebuilds when other admins' fetches land on this client.
-    [QGVAR(rosterLoaded), {call FUNC(refreshCertMenu)}] call CBA_fnc_addEventHandler;
+    [QGVAR(rosterLoaded), {call FUNC(refreshPlayerList)}] call CBA_fnc_addEventHandler;
     [QGVAR(offlineCertsLoaded), {
         params ["_granteeUID"];
-        private _display = findDisplay IDD_ADMIN_CERT_MENU;
+        private _display = findDisplay IDD_ADMIN_MENU;
         if (isNull _display) exitWith {};
         private _playerList = _display displayCtrl IDC_ADMINCERT_PLAYER_LIST;
         private _sel = lbCurSel _playerList;
@@ -113,7 +156,7 @@ if (hasInterface) then {
     // a few seconds so allPlayers / the player's unit object are populated
     // by the time we rebuild the listbox.
     addMissionEventHandler ["PlayerConnected", {
-        [{call FUNC(refreshCertMenu)}, [], 3] call CBA_fnc_waitAndExecute;
+        [{call FUNC(refreshPlayerList)}, [], 3] call CBA_fnc_waitAndExecute;
     }];
-    addMissionEventHandler ["PlayerDisconnected", {call FUNC(refreshCertMenu)}];
+    addMissionEventHandler ["PlayerDisconnected", {call FUNC(refreshPlayerList)}];
 };

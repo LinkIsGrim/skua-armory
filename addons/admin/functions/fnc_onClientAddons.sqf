@@ -7,6 +7,7 @@
  * 0: UID (Steam ID) of client <STRING>
  * 1: Player object of the client, used for the target event <OBJECT>
  * 2: Full Addon List from client <ARRAY of STRING>
+ * 3: Per-addon source-mod map: addonClass -> [modDir, modName] <HASHMAP>
  *
  * Return Value:
  * None
@@ -17,7 +18,7 @@
  * Public: No
  */
 
-params ["_uid", "_playerObject", "_fullAddonList"];
+params ["_uid", "_playerObject", "_fullAddonList", ["_modMap", createHashMap]];
 
 if (!isServer) exitWith {}; // Only the server cares about this
 
@@ -31,9 +32,16 @@ if (_uid in GVAR(clientAddonMap)) exitWith {
 private _extraAddons = _fullAddonList - GVAR(serverAddons);
 private _missingAddons = GVAR(serverAddons) - _fullAddonList;
 
+// Restrict the mod map to the extras only — that's what the admin UI groups.
+private _extrasModMap = createHashMap;
+{
+    private _entry = _modMap getOrDefault [_x, ["", ""]];
+    _extrasModMap set [_x, _entry];
+} forEach _extraAddons;
+
 INFO_4("Client %1 with UID %2 has %3 extra addons and %4 missing addons",name _playerObject,_uid,count _extraAddons,count _missingAddons);
 
-GVAR(clientAddonMap) set [_uid, [_extraAddons, _missingAddons]];
+GVAR(clientAddonMap) set [_uid, [_extraAddons, _missingAddons, _extrasModMap]];
 
 if (count _missingAddons > 0) then {
     private _missingMods = _missingAddons call FUNC(getModNamesFromAddons);

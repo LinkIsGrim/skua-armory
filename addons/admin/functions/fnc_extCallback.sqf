@@ -2,9 +2,9 @@
 /*
  * Author: LinkIsGrim
  * Server-only mission ExtensionCallback router for the admin cert menu.
- * Decodes the two callback channels this addon owns and rebroadcasts the
- * results as global CBA events so hasInterface admin clients can cache
- * them:
+ * Decodes the two callback channels this addon owns and fans the results
+ * out to admin clients only (via fnc_adminEvent) — these payloads are
+ * admin-UI-only and would otherwise flood every connected client:
  *   - "skua:player_info" "list"        → QGVAR(rosterPushed) [roster]
  *   - "skua:certification" "get_player" → QGVAR(offlineCertsPushed) [uid, certIds]
  *
@@ -34,7 +34,7 @@ switch (_name) do {
             ERROR_1("player_info:list callback failed with state %1",_state);
         };
         private _roster = fromJSON _payload;
-        [QGVAR(rosterPushed), [_roster]] call CBA_fnc_globalEvent;
+        [QGVAR(rosterPushed), [_roster]] call FUNC(adminEvent);
     };
 
     case "skua:certification": {
@@ -47,7 +47,7 @@ switch (_name) do {
         [
             QGVAR(offlineCertsPushed),
             [_decoded get "player_id", _decoded get "cert_ids"]
-        ] call CBA_fnc_globalEvent;
+        ] call FUNC(adminEvent);
     };
 
     default {};

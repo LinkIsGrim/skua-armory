@@ -25,7 +25,7 @@
 
 params [["_op", "", [""]], ["_sourceIdc", 0, [0]], ["_persistent", false, [false]]];
 
-private _display = findDisplay IDD_ADMIN_CERT_MENU;
+private _display = findDisplay IDD_ADMIN_MENU;
 if (isNull _display) exitWith {};
 
 private _playerList = _display displayCtrl IDC_ADMINCERT_PLAYER_LIST;

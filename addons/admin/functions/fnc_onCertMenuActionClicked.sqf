@@ -23,7 +23,7 @@
 
 params [["_temp", false, [false]]];
 
-private _display = findDisplay IDD_ADMIN_CERT_MENU;
+private _display = findDisplay IDD_ADMIN_MENU;
 if (isNull _display) exitWith {};
 
 private _focused = _display getVariable [QGVAR(focusedCertList), -1];

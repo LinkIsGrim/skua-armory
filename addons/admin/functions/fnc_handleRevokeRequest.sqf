@@ -79,4 +79,4 @@ private _event = _certData get "revoke_event";
 INFO_3("Admin %1 temp-revoking cert %2 from %3",_granterUID,_certID,_granteeUID);
 [_event, _grantee] call CBA_fnc_serverEvent;
 
-[QEV_CERTIFICATION_REVOKED_GLOBAL, [createHashMapFromArray [["player_id", _granteeUID], ["cert_id", _certID]]]] call CBA_fnc_globalEvent;
+[QEV_CERTIFICATION_REVOKED_GLOBAL, [createHashMapFromArray [["player_id", _granteeUID], ["cert_id", _certID]]]] call FUNC(adminEvent);

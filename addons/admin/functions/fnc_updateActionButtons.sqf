@@ -7,7 +7,7 @@
  * disabled when the selected grantee is offline (no unit to attach tempCerts
  * to / no live perk to tear down).
  *
- * Called from: fnc_onCertMenuOpen (initial state), the listbox LBSelChanged
+ * Called from: fnc_onAdminMenuOpen (initial state), the listbox LBSelChanged
  * hook (focus change), and fnc_refreshCertLists (after a player selection
  * change so the buttons reflect online/offline status).
  *
@@ -20,7 +20,7 @@
  * Public: No
  */
 
-private _display = findDisplay IDD_ADMIN_CERT_MENU;
+private _display = findDisplay IDD_ADMIN_MENU;
 if (isNull _display) exitWith {};
 
 private _btn = _display displayCtrl IDC_ADMINCERT_BTN_ACTION;

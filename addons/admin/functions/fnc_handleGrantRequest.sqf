@@ -89,5 +89,5 @@ private _event = _certData get "grant_event";
 INFO_3("Admin %1 temp-granting cert %2 to %3",_granterUID,_certID,_granteeUID);
 [_event, _grantee] call CBA_fnc_serverEvent;
 
-// Notify open admin menus on hasInterface clients to refresh.
-[QEV_CERTIFICATION_GRANTED_GLOBAL, [createHashMapFromArray [["player_id", _granteeUID], ["cert_id", _certID]]]] call CBA_fnc_globalEvent;
+// Notify open admin menus on hasInterface admin clients to refresh.
+[QEV_CERTIFICATION_GRANTED_GLOBAL, [createHashMapFromArray [["player_id", _granteeUID], ["cert_id", _certID]]]] call FUNC(adminEvent);
