@@ -109,7 +109,7 @@ if (hasInterface) then {
         if (_uid in _cache) then {
             (_cache get _uid) pushBackUnique _certId;
         };
-        call FUNC(refreshCertMenu);
+        call FUNC(refreshPlayerList);
     }] call CBA_fnc_addEventHandler;
     [QEV_CERTIFICATION_REVOKED_GLOBAL, {
         params ["_data"];
@@ -119,9 +119,9 @@ if (hasInterface) then {
         if (_uid in _cache) then {
             _cache set [_uid, (_cache get _uid) - [_certId]];
         };
-        call FUNC(refreshCertMenu);
+        call FUNC(refreshPlayerList);
     }] call CBA_fnc_addEventHandler;
-    [QEV_CERTIFICATION_LIST_CHANGED_GLOBAL, {call FUNC(refreshCertMenu)}] call CBA_fnc_addEventHandler;
+    [QEV_CERTIFICATION_LIST_CHANGED_GLOBAL, {call FUNC(refreshPlayerList)}] call CBA_fnc_addEventHandler;
 
     // Roster + offline-cert fetches: server callExtension → server
     // ExtensionCallback adapter globalEvents the parsed payload here.
@@ -129,12 +129,15 @@ if (hasInterface) then {
     [QGVAR(offlineCertsPushed), LINKFUNC(onCertificationGetPlayerCallback)] call CBA_fnc_addEventHandler;
     // Bulk addon-map response (admin → server → admin) for the Addon List tab.
     [QGVAR(clientAddonMapPushed), LINKFUNC(onClientAddonMapCallback)] call CBA_fnc_addEventHandler;
+    // Addon-map cache changed — refresh the open Admin Menu's Addons tab.
+    // refreshAddonLists no-ops when the dialog isn't open.
+    [QGVAR(addonMapLoaded), {call FUNC(refreshAddonLists)}] call CBA_fnc_addEventHandler;
 
     // Cache-arrival hooks: when a roster or offline-cert fetch lands, refresh
     // the open menu (no-op when closed). Cert refresh only runs if the newly
     // arrived UID matches the currently selected player — avoids gratuitous
     // listbox rebuilds when other admins' fetches land on this client.
-    [QGVAR(rosterLoaded), {call FUNC(refreshCertMenu)}] call CBA_fnc_addEventHandler;
+    [QGVAR(rosterLoaded), {call FUNC(refreshPlayerList)}] call CBA_fnc_addEventHandler;
     [QGVAR(offlineCertsLoaded), {
         params ["_granteeUID"];
         private _display = findDisplay IDD_ADMIN_MENU;
@@ -153,7 +156,7 @@ if (hasInterface) then {
     // a few seconds so allPlayers / the player's unit object are populated
     // by the time we rebuild the listbox.
     addMissionEventHandler ["PlayerConnected", {
-        [{call FUNC(refreshCertMenu)}, [], 3] call CBA_fnc_waitAndExecute;
+        [{call FUNC(refreshPlayerList)}, [], 3] call CBA_fnc_waitAndExecute;
     }];
-    addMissionEventHandler ["PlayerDisconnected", {call FUNC(refreshCertMenu)}];
+    addMissionEventHandler ["PlayerDisconnected", {call FUNC(refreshPlayerList)}];
 };

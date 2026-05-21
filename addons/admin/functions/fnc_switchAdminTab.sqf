@@ -91,8 +91,8 @@ if (_addons) then {
     };
     // Force a roster refresh so offline entries get filtered out now that
     // online-only is on.
-    call FUNC(refreshCertMenu);
+    call FUNC(refreshPlayerList);
 } else {
     // Switching back — re-run cert list refresh for the current selection.
-    call FUNC(refreshCertMenu);
+    call FUNC(refreshPlayerList);
 };

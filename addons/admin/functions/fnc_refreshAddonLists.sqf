@@ -73,7 +73,7 @@ private _extrasByMod = createHashMap;
 {
     private _entry = _extrasModMap getOrDefault [_x, ["", ""]];
     _entry params ["", "_name"];
-    private _bucketKey = if (_name isEqualTo "") then {UNRESOLVED_LABEL} else {_name};
+    private _bucketKey = [_name, UNRESOLVED_LABEL] select (_name isEqualTo "");
     private _bucket = _extrasByMod getOrDefault [_bucketKey, []];
     _bucket pushBack _x;
     _extrasByMod set [_bucketKey, _bucket];

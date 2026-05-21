@@ -74,7 +74,6 @@ class skua_admin_AdminMenu {
     enableSimulation = 1;
 
     onLoad = QUOTE(_this call FUNC(onAdminMenuOpen));
-    onUnload = QUOTE(_this call FUNC(onCertMenuClose));
 
     class ControlsBackground {
         class TitleBg: RscText {
@@ -128,7 +127,7 @@ class skua_admin_AdminMenu {
         class PlayerHeader: RscCheckBox {
             idc = IDC_ADMINCERT_CHK_ONLINE_ONLY;
             tooltip = "Show online players only. Uncheck to include everyone who's ever played.";
-            onCheckedChanged = QUOTE(call FUNC(refreshCertMenu));
+            onCheckedChanged = QUOTE(call FUNC(refreshPlayerList));
             x = QUOTE(POS_X(ACM_X + ACM_COL_PLAYER_X));
             y = QUOTE(POS_Y(ACM_Y + ACM_BODY_Y));
             w = QUOTE(POS_W(ACM_CHK_BOX_W));
@@ -273,7 +272,7 @@ class skua_admin_AdminMenu {
         class BtnClose: RscButtonMenu {
             idc = IDC_ADMINCERT_BTN_CLOSE;
             text = "Close";
-            onButtonClick = QUOTE(call FUNC(onCertMenuCloseClicked));
+            onButtonClick = QUOTE(call FUNC(onAdminMenuCloseClicked));
             x = QUOTE(POS_X(ACM_X));
             y = QUOTE(POS_Y(ACM_Y + ACM_BTN_ROW_Y));
             w = QUOTE(POS_W(ACM_BTN_W));

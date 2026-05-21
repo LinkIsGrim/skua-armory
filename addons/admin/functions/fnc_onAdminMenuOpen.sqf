@@ -60,12 +60,7 @@ _extraModsList ctrlAddEventHandler ["LBSelChanged", {call FUNC(refreshExtraAddon
 private _onlineOnly = _display displayCtrl IDC_ADMINCERT_CHK_ONLINE_ONLY;
 _onlineOnly cbSetChecked true;
 
-_display displayAddEventHandler ["KeyDown", {_this call FUNC(onCertMenuKeyDown)}];
-
-// Listen for cached-map updates (initial fetch landing or a disconnect
-// pruning the cache).
-private _addonMapListener = [QGVAR(addonMapLoaded), {call FUNC(refreshAddonLists)}] call CBA_fnc_addEventHandler;
-_display setVariable [QGVAR(addonMapListener), _addonMapListener];
+_display displayAddEventHandler ["KeyDown", {_this call FUNC(onAdminMenuKeyDown)}];
 
 // Kick off the historical-roster fetch. Even with the online-only filter on
 // by default, the roster is needed so toggling the filter doesn't have to
@@ -74,4 +69,4 @@ call FUNC(fetchPlayerRoster);
 
 // Apply default tab visibility once controls are settled.
 [{[_this, ADMIN_TAB_CERTS] call FUNC(switchAdminTab)}, _display] call CBA_fnc_execNextFrame;
-[{call FUNC(refreshCertMenu)}] call CBA_fnc_execNextFrame;
+[{call FUNC(refreshPlayerList)}] call CBA_fnc_execNextFrame;
