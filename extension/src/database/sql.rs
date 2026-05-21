@@ -7,6 +7,7 @@ pub mod master {
     pub const RANKS: &str = include_str!("sql/010_master_ranks.sql");
     pub const CERTIFICATIONS: &str = include_str!("sql/011_master_certifications.sql");
     pub const CAMPAIGNS: &str = include_str!("sql/012_master_campaigns.sql");
+    pub const CAMPAIGNS_ALTER: &str = include_str!("sql/014_master_campaigns_alter.sql");
     pub const PLAYER_INFO: &str = include_str!("sql/020_master_player_info.sql");
     pub const PLAYER_INFO_IDX_ADMIN: &str =
         include_str!("sql/021_master_player_info_idx_admin.sql");

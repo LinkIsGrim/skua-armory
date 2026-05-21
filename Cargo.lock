@@ -29,8 +29,6 @@ checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
 [[package]]
 name = "arma-rs"
 version = "1.12.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ae6e1d467f4fa3b57a5eca567551abd8638c57af7db4ac4b53c6a5aa1fff761"
 dependencies = [
  "arma-rs-proc",
  "crossbeam-channel",
@@ -47,8 +45,6 @@ dependencies = [
 [[package]]
 name = "arma-rs-proc"
 version = "1.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8a6f278bb879949843757ff56f4495fa2c86fe27092c57a0c8428702501cb5fe"
 dependencies = [
  "proc-macro2",
  "quote",
