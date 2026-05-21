@@ -91,6 +91,16 @@ call FUNC(sendClientAddons);
 [QGVAR(clientDisconnected), LINKFUNC(onClientDisconnected)] call CBA_fnc_addEventHandler;
 
 if (hasInterface) then {
+    // Pause menu entry — admins only. CBA_fnc_addPauseMenuOption has no
+    // condition param so we gate the registration itself. Same trick as
+    // ACE's headbug fix entry in addons/optionsmenu.
+    if (player call FUNC(isAdmin)) then {
+        [
+            ["Admin Menu", "Open the Skua admin menu."],
+            QGVAR(PauseMenuHelperAdminMenu)
+        ] call CBA_fnc_addPauseMenuOption;
+    };
+
     // Refresh the open admin cert menu (no-op if closed) whenever cert state
     // changes anywhere. Server rebroadcasts the canonical events as `_GLOBAL`
     // so clients catch live grants/revokes triggered by any admin.

@@ -127,6 +127,7 @@ class skua_admin_AdminMenu {
         class PlayerHeader: RscCheckBox {
             idc = IDC_ADMINCERT_CHK_ONLINE_ONLY;
             tooltip = "Show online players only. Uncheck to include everyone who's ever played.";
+            checked = 1; // Default ON at open; tabs override via forcesOnlineOnly.
             onCheckedChanged = QUOTE(call FUNC(refreshPlayerList));
             x = QUOTE(POS_X(ACM_X + ACM_COL_PLAYER_X));
             y = QUOTE(POS_Y(ACM_Y + ACM_BODY_Y));
