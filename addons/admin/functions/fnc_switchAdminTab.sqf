@@ -2,17 +2,22 @@
 #include "..\ui\defines.hpp"
 /*
  * Author: LinkIsGrim
- * Switch the Admin Menu's active tab. Toggles visibility on the certs panel
- * vs the addons panel and updates the tab buttons' visual selection state.
+ * Switch the Admin Menu's active tab. Reads the tab registry built in
+ * fnc_onAdminMenuOpen (QGVAR(tabs)) and uniformly:
+ *   1. Toggles panel control visibility per descriptor's panelIdcs.
+ *   2. Updates each tab button's label chrome (active tab gets a "> " prefix).
+ *   3. Applies shared-control state (online-only override, refresh icon)
+ *      from the descriptor's flags. Saves/restores the user's prior
+ *      "Online only" choice across forced-online transitions.
+ *   4. Calls the leaving tab's onDeactivate, then the entering tab's
+ *      onActivate.
  *
- * On switching to the Addons tab: forces "Online only" checked + disabled
- * (offline players can't report their addons by definition), and triggers a
- * bulk fetch of the client addon map if uiNamespace has nothing cached.
- * The map then lands via QGVAR(addonMapLoaded) → fnc_refreshAddonLists.
+ * Adding a new tab does not touch this file — push a descriptor in
+ * fnc_onAdminMenuOpen and ensure the button + IDCs exist in the .hpp.
  *
  * Arguments:
  * 0: Display <DISPLAY>
- * 1: Tab id (ADMIN_TAB_CERTS / ADMIN_TAB_ADDONS) <NUMBER>
+ * 1: Tab id <NUMBER>
  *
  * Return Value:
  * None.
@@ -24,75 +29,51 @@ params ["_display", "_tab"];
 
 if (isNull _display) exitWith {};
 
+private _tabs = _display getVariable [QGVAR(tabs), createHashMap];
+if !(_tab in _tabs) exitWith {
+    ERROR_1("Unknown admin menu tab id %1",_tab);
+};
+
+private _prevTab = _display getVariable [QGVAR(activeTab), -1];
 _display setVariable [QGVAR(activeTab), _tab];
 
-private _certs  = _tab isEqualTo ADMIN_TAB_CERTS;
-private _addons = _tab isEqualTo ADMIN_TAB_ADDONS;
-
-// Certs panel
+// 1 + 2: Panel visibility + tab-button chrome — one pass over the registry.
 {
-    (_display displayCtrl _x) ctrlShow _certs;
-} forEach [
-    IDC_ADMINCERT_HELD_TITLE,
-    IDC_ADMINCERT_HELD_LIST,
-    IDC_ADMINCERT_AVAILABLE_TITLE,
-    IDC_ADMINCERT_AVAILABLE_LIST,
-    IDC_ADMINCERT_BTN_ACTION,
-    IDC_ADMINCERT_BTN_ACTION_TEMP,
-    IDC_ADMINCERT_BTN_COMMIT
-];
+    private _isActive = _x isEqualTo _tab;
+    {(_display displayCtrl _x) ctrlShow _isActive} forEach (_y get "panelIdcs");
+    private _btn = _display displayCtrl (_y get "tabBtnIdc");
+    private _label = _y get "label";
+    _btn ctrlSetText ([_label, "> " + _label] select _isActive);
+} forEach _tabs;
 
-// Addons panel
-{
-    (_display displayCtrl _x) ctrlShow _addons;
-} forEach [
-    IDC_ADMINMENU_MISSING_TITLE,
-    IDC_ADMINMENU_MISSING_LIST,
-    IDC_ADMINMENU_EXTRA_MODS_TITLE,
-    IDC_ADMINMENU_EXTRA_MODS_LIST,
-    IDC_ADMINMENU_EXTRA_ADDONS_TITLE,
-    IDC_ADMINMENU_EXTRA_ADDONS_LIST
-];
+// 3: Shared controls driven by descriptor flags.
+private _activeDesc  = _tabs get _tab;
+private _forceOnline = _activeDesc get "forcesOnlineOnly";
+private _showRefresh = _activeDesc get "showsRefreshIcon";
 
-// Online-only filter is forced on the Addons tab (offline players have no
-// reported addons). Save the previous state on first switch into Addons so
-// switching back restores user intent.
 private _onlineOnly = _display displayCtrl IDC_ADMINCERT_CHK_ONLINE_ONLY;
 private _refresh    = _display displayCtrl IDC_ADMINCERT_BTN_REFRESH;
-if (_addons) then {
+_refresh ctrlShow _showRefresh;
+
+if (_forceOnline) then {
+    // Stash the user's prior choice exactly once so a Cert → Addons → Cert
+    // round trip restores correctly even if they toggle Addons multiple times.
     if (isNil {_display getVariable QGVAR(savedOnlineOnly)}) then {
         _display setVariable [QGVAR(savedOnlineOnly), cbChecked _onlineOnly];
     };
     _onlineOnly cbSetChecked true;
     _onlineOnly ctrlEnable false;
-    // Refresh icon is roster-only; addon map is event-invalidated.
-    _refresh ctrlShow false;
 } else {
     if (!isNil {_display getVariable QGVAR(savedOnlineOnly)}) then {
         _onlineOnly cbSetChecked (_display getVariable QGVAR(savedOnlineOnly));
         _display setVariable [QGVAR(savedOnlineOnly), nil];
     };
     _onlineOnly ctrlEnable true;
-    _refresh ctrlShow true;
 };
 
-// Tab-button selection chrome — leading "> " marks the active tab.
-private _certBtn   = _display displayCtrl IDC_ADMINMENU_BTN_TAB_CERTS;
-private _addonsBtn = _display displayCtrl IDC_ADMINMENU_BTN_TAB_ADDONS;
-_certBtn   ctrlSetText (["Certifications", "> Certifications"] select _certs);
-_addonsBtn ctrlSetText (["Addon List",    "> Addon List"]    select _addons);
-
-if (_addons) then {
-    // Bulk fetch on first switch; otherwise refresh from cache.
-    if (isNil {uiNamespace getVariable QGVAR(clientAddonMap)}) then {
-        call FUNC(fetchClientAddonMap);
-    } else {
-        call FUNC(refreshAddonLists);
-    };
-    // Force a roster refresh so offline entries get filtered out now that
-    // online-only is on.
-    call FUNC(refreshPlayerList);
-} else {
-    // Switching back — re-run cert list refresh for the current selection.
-    call FUNC(refreshPlayerList);
+// 4: Lifecycle hooks. Deactivate runs first so onActivate sees fully-restored
+// shared state.
+if (_prevTab >= 0 && {_prevTab in _tabs}) then {
+    call (_tabs get _prevTab get "onDeactivate");
 };
+call (_activeDesc get "onActivate");

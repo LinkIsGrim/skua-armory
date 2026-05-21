@@ -81,4 +81,9 @@ if (_prevUID isNotEqualTo "") then {
 if (_restoreIdx < 0 && {lbSize _playerList > 0}) then {_restoreIdx = 0};
 if (_restoreIdx >= 0) then {_playerList lbSetCurSel _restoreIdx};
 
-call FUNC(refreshCertLists);
+// Fire every tab's onRefresh — lbSetCurSel doesn't reliably trigger
+// LBSelChanged when the new index equals the previous one, so we call them
+// directly. Only the active tab's panel is visible; the others stay in sync
+// for free.
+private _tabs = _display getVariable [QGVAR(tabs), createHashMap];
+{call (_y get "onRefresh")} forEach _tabs;
