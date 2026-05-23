@@ -58,12 +58,16 @@ if (_selIdx < 0) exitWith {};
 private _uid = _playerList lbData _selIdx;
 if (_uid isEqualTo "" || !(_uid in _map)) exitWith {};
 
-(_map get _uid) params ["_extras", "_missing", ["_extrasModMap", createHashMap]];
+(_map get _uid) params ["_extras", "_missing", ["_extrasModMap", createHashMap], ["_missingModMap", createHashMap]];
 
-// Missing mods — server has these loaded; resolve locally.
-private _missingMods = _missing call FUNC(getModNamesFromAddons);
-private _sortedMissing = [];
-{_sortedMissing pushBackUnique _x} forEach _missingMods;
+// Missing mods — resolved server-side since the admin client doesn't have
+// them loaded and can't do configSourceMod on them.
+private _missingModNames = createHashMap;
+{
+    _missingModNames set [(_missingModMap getOrDefault [_x, ["", ""]]) select 1, nil];
+} forEach _missing;
+_missingModNames deleteAt "";
+private _sortedMissing = keys _missingModNames;
 _sortedMissing sort true;
 {_missingCtrl lbAdd _x} forEach _sortedMissing;
 
