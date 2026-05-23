@@ -7,18 +7,21 @@ class GVAR(logisticsItems) {
         description = "sub-menu for Fleffs Advanced Repair Major Parts.";
         price = 0; // Placeholder, not gonna be set here
         children = QFUNC(logistics_getMajorParts);
+        fieldAvailable = 1;
     };
     class SpareWheel {
         displayName = "Spare Wheel";
         object = "ACE_Wheel";
         description = "A spare wheel for vehicles.";
         price = 0; // Placeholder, not gonna be set here
+        fieldAvailable = 1;
     };
     class Track {
         displayName = "Spare Track";
         object = "ACE_Track";
         description = "A spare track for tracked vehicles.";
         price = 0; // Placeholder, not gonna be set here
+        fieldAvailable = 1;
     };
     class FuelCanister {
         displayName = "Fuel Canister (20L)";
@@ -26,6 +29,7 @@ class GVAR(logisticsItems) {
         description = "An empty fuel canister for refueling vehicles.";
         price = 0; // Placeholder, not gonna be set here
         onPull = QFUNC(logistics_onPullFuelCanister);
+        fieldAvailable = 1;
     };
     class FuelReservoir {
         displayName = "Fuel Reservoir (300L)";
@@ -33,6 +37,7 @@ class GVAR(logisticsItems) {
         description = "A large fuel reservoir for refueling vehicles.";
         price = 0; // Placeholder, not gonna be set here
         onPull = QFUNC(logistics_onPullFuelCanister);
+        fieldAvailable = 1;
     };
     class CargoNet {
         displayName = "Cargo Net";
@@ -59,11 +64,20 @@ class GVAR(logisticsItems) {
         price = 0; // Placeholder, not gonna be set here
         onPull = QFUNC(logistics_onPull60mmAmmo);
     };
+    class RopeCrate {
+        displayName = "Rope Crate";
+        object = "APM_large_crate";
+        description = "A crate containing assorted ropes.";
+        price = 0; // Placeholder, not gonna be set here
+        onPull = QFUNC(logistics_onPullRopeCrate);
+        fieldAvailable = 1;
+    };
     class SparePartsBox {
         displayName = "Spare Parts Box";
         object = "FL_parts_SpareParts";
         description = "A box containing spare parts for vehicle repairs.";
         price = 0; // Placeholder, not gonna be set here
+        fieldAvailable = 1;
     };
     class MedicalBox {
         displayName = "Medical Box";

@@ -7,7 +7,8 @@ class CfgPatches {
         requiredVersion = REQUIRED_VERSION;
         requiredAddons[] = {
             "skua_main",
-            "ace_arsenal"
+            "ace_arsenal",
+            "ace_repair"
         };
         skipWhenMissingDependencies = 1;
         author = "LinkIsGrim";

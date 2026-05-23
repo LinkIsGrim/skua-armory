@@ -7,6 +7,7 @@ hemtt.exe
 releases
 .hemttprivatekey
 target
+target-cross
 *.zip
 .claude
 *.dll

@@ -13,6 +13,10 @@ if ! command -v cargo-xwin >/dev/null 2>&1; then
     cargo install cargo-xwin --locked
 fi
 
+if command -v sccache >/dev/null 2>&1; then
+    export RUSTC_WRAPPER=sccache
+fi
+
 echo "Building binaries for Windows and Linux concurrently"
 
 # Capture build output to temp logs so the two streams don't interleave on the
@@ -21,7 +25,9 @@ linux_log="$(mktemp)"
 windows_log="$(mktemp)"
 trap 'rm -f "$linux_log" "$windows_log"' EXIT
 
-(cross build --target x86_64-unknown-linux-gnu --release) >"$linux_log" 2>&1 &
+# Use a separate target dir so host-compiled build scripts don't leak into the
+# cross container (glibc mismatch).
+(CARGO_TARGET_DIR="$REPO_ROOT/target-cross" cross build --target x86_64-unknown-linux-gnu --release) >"$linux_log" 2>&1 &
 linux_pid=$!
 
 (cargo xwin build --release --target x86_64-pc-windows-msvc) >"$windows_log" 2>&1 &
@@ -50,4 +56,4 @@ fi
 echo "Moving compiled binaries to repository root"
 
 mv "$REPO_ROOT/target/x86_64-pc-windows-msvc/release/skua.dll" "$REPO_ROOT/skua_x64.dll"
-mv "$REPO_ROOT/target/x86_64-unknown-linux-gnu/release/libskua.so" "$REPO_ROOT/skua_x64.so"
+mv "$REPO_ROOT/target-cross/x86_64-unknown-linux-gnu/release/libskua.so" "$REPO_ROOT/skua_x64.so"

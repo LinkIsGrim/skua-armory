@@ -16,6 +16,30 @@ if (isServer) then {
     publicVariable QGVAR(baseArsenals); // make sure to sync
 };
 
+if (hasInterface) then {
+    private _fieldLogiAction = [
+        QGVAR(fieldLogisticsMenu),
+        "Field Logistics",
+        "\A3\ui_f\data\igui\cfg\simpletasks\types\rearm_ca.paa",
+        {true},
+        {
+            alive _target && {
+                [_target] call ACEFUNC(repair,isRepairVehicle)
+                || {!(_target isKindOf "AllVehicles")
+                    && {_target getVariable ["ACE_isRepairFacility",
+                        getNumber (configOf _target >> QGVAR(canRepair)) max
+                        getNumber (configOf _target >> "transportRepair")] in [1, true]}
+                    && {alive _target}}
+            }
+        },
+        {_target call FUNC(makeFieldLogisticsActions)}
+    ] call ACEFUNC(interact_menu,createAction);
+
+    {
+        [_x, 0, ["ACE_MainActions"], _fieldLogiAction, true] call ACEFUNC(interact_menu,addActionToClass);
+    } forEach ["Car", "Tank", "Helicopter", "Ship", "Static", "Building", "ThingX"];
+};
+
 if (isServer && isMultiplayer) then {
     [{
         [{time > 0}, {

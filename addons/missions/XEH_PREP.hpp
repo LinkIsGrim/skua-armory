@@ -10,6 +10,8 @@ PREP(logistics_getMajorParts);
 PREP(logistics_makeLogiObjectAction);
 PREP(logistics_onPull60mmAmmo);
 PREP(logistics_onPullFuelCanister);
+PREP(logistics_onPullRopeCrate);
+PREP(makeFieldLogisticsActions);
 PREP(makeLogisticsActions);
 PREP(missionHint);
 PREP(moduleArsenalAddArea);
