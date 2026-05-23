@@ -28,8 +28,7 @@ if (hasInterface) then {
                 || {!(_target isKindOf "AllVehicles")
                     && {_target getVariable ["ACE_isRepairFacility",
                         getNumber (configOf _target >> QGVAR(canRepair)) max
-                        getNumber (configOf _target >> "transportRepair")] in [1, true]}
-                    && {alive _target}}
+                        getNumber (configOf _target >> "transportRepair")] in [1, true]}}
             }
         },
         {_target call FUNC(makeFieldLogisticsActions)}
@@ -37,7 +36,7 @@ if (hasInterface) then {
 
     {
         [_x, 0, ["ACE_MainActions"], _fieldLogiAction, true] call ACEFUNC(interact_menu,addActionToClass);
-    } forEach ["Car", "Tank", "Helicopter", "Ship", "Static", "Building", "ThingX"];
+    } forEach ["Car", "Tank", "Helicopter", "Plane", "Ship", "Static", "Building", "ThingX"];
 };
 
 if (isServer && isMultiplayer) then {
