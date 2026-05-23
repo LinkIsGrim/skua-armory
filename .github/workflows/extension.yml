@@ -25,46 +25,57 @@ jobs:
       with:
         components: rustfmt
 
-    - name: Cache cargo
-      uses: Swatinem/rust-cache@v2
-
     - name: cargo fmt
       working-directory: extension
       run: cargo fmt --all -- --check
 
   clippy:
     runs-on: ubuntu-latest
+    env:
+      SCCACHE_GHA_ENABLED: true
+      RUSTC_WRAPPER: sccache
     steps:
     - name: Checkout
       uses: actions/checkout@v6
       with:
         submodules: recursive
+
+    - name: Install mold and clang
+      run: sudo apt-get install -y mold
 
     - name: Setup Rust
       uses: dtolnay/rust-toolchain@stable
       with:
         components: clippy
 
-    - name: Cache cargo
-      uses: Swatinem/rust-cache@v2
+    - name: Setup sccache
+      uses: mozilla-actions/sccache-action@v0.0.9
 
     - name: cargo clippy
       working-directory: extension
       run: cargo clippy --locked --all-targets -- -D warnings -W clippy::pedantic
+      env:
+        RUSTFLAGS: -C link-arg=-fuse-ld=mold
 
   test:
     runs-on: ubuntu-latest
+    env:
+      SCCACHE_GHA_ENABLED: true
+      RUSTC_WRAPPER: sccache
     steps:
     - name: Checkout
       uses: actions/checkout@v6
       with:
         submodules: recursive
 
+    - name: Install mold and clang
+      run: sudo apt-get install -y mold
+
     - name: Setup Rust
       uses: dtolnay/rust-toolchain@stable
 
-    - name: Cache cargo
-      uses: Swatinem/rust-cache@v2
+    - name: Setup sccache
+      uses: mozilla-actions/sccache-action@v0.0.9
 
     - name: Cache Postgres image
       id: pg-cache
@@ -85,3 +96,5 @@ jobs:
     - name: cargo test
       working-directory: extension
       run: cargo test --locked
+      env:
+        RUSTFLAGS: -C link-arg=-fuse-ld=mold

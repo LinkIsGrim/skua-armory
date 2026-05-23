@@ -26,13 +26,15 @@ private _objects = [];
     private _displayName = getText (_x >> "displayName");
     private _children = getText (_x >> "children");
     private _onPull = getText (_x >> "onPull");
+    private _fieldAvailable = getNumber (_x >> "fieldAvailable");
 
     _objects pushBack [
         _class,
         _object,
         _displayName,
         _children,
-        _onPull
+        _onPull,
+        _fieldAvailable
     ];
 } forEach ("true" configClasses _cfg);
 

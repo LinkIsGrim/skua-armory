@@ -17,4 +17,5 @@
 
 TRACE_1("fnc_compileLogisticsMenuActions",_this);
 
-GVAR(logisticsObjects) apply { _x call FUNC(logistics_makeLogiObjectAction) };
+GVAR(logisticsMenuActions) = GVAR(logisticsObjects) apply { _x call FUNC(logistics_makeLogiObjectAction) };
+GVAR(fieldLogisticsMenuActions) = (GVAR(logisticsObjects) select { _x select 5 == 1 }) apply { _x call FUNC(logistics_makeLogiObjectAction) };
