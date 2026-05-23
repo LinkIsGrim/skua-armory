@@ -22,11 +22,15 @@ class CfgPatches {
 #include "ui\pauseMenu.hpp"
 
 enableDebugConsole[] = { // TODO: Replace with database lookup at runtime
-    "76561198027717871", //Picker
-    "76561198146199462"  //Link
+    "76561198027717871",  // Picker
+    "76561198146199462",  // Link
+    "76561198267873606",  // Evil
+    "76561198078884802"   // Geddie
 };
 
 cba_settings_whitelist[] = { // Do not replace with database lookup at runtime
-    "76561198027717871", //Picker
-    "76561198146199462"  //Link
+    "76561198027717871", // Picker
+    "76561198146199462",  // Link
+    "76561198267873606",  // Evil
+    "76561198078884802"   // Geddie
 };
