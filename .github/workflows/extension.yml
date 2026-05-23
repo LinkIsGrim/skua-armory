@@ -66,7 +66,22 @@ jobs:
     - name: Cache cargo
       uses: Swatinem/rust-cache@v2
 
-    # ubuntu-latest has Docker pre-installed; testcontainers picks it up.
+    - name: Cache Postgres image
+      id: pg-cache
+      uses: actions/cache@v4
+      with:
+        path: /tmp/postgres-image.tar
+        key: docker-postgres-18-alpine
+
+    - name: Load or pull Postgres image
+      run: |
+        if [ -f /tmp/postgres-image.tar ]; then
+          docker load -i /tmp/postgres-image.tar
+        else
+          docker pull postgres:18-alpine
+          docker save postgres:18-alpine -o /tmp/postgres-image.tar
+        fi
+
     - name: cargo test
       working-directory: extension
       run: cargo test --locked
