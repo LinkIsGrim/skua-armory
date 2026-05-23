@@ -22,6 +22,13 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
+    - name: Mint app token
+      id: app-token
+      uses: actions/create-github-app-token@v1
+      with:
+        app-id: ${{ secrets.APP_ID }}
+        private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
     - name: Install Arma 3 Tools
       uses: arma-actions/arma3-tools@master
       with:
@@ -31,6 +38,7 @@ jobs:
       uses: actions/checkout@v6
       with:
         ref: ${{ inputs.tag || github.ref }}
+        token: ${{ steps.app-token.outputs.token }}
         submodules: recursive
 
     - name: Setup Rust
