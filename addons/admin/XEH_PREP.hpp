@@ -10,6 +10,7 @@ PREP(sendClientAddons);
 PREP(fetchClientAddonMap);
 PREP(handleFetchClientAddonMapRequest);
 PREP(onClientAddonMapCallback);
+PREP(onClientAddonEntry);
 PREP(onClientDisconnected);
 
 PREP(isAdmin);

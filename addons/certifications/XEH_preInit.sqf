@@ -31,8 +31,10 @@ if (isServer) then {
 
     // Server re-broadcasts the canonical cert events as `_GLOBAL` variants so
     // hasInterface clients (admin UI etc.) can react without needing the
-    // extension's local-only event stream. Non-JIP — late joiners hydrate
-    // via the post-bootstrap list push and the player_connect cert replay.
+    // extension's local-only event stream. Grant/revoke are non-JIP — clients
+    // get held certs via player setVariable broadcast; admin UI cache mutations
+    // for missed events are harmless since the menu force-refreshes on open.
+    // List-changed IS JIP so late joiners hydrate their GVAR(list)/GVAR(map).
     [QEV_CERTIFICATION_GRANTED, {
         [QEV_CERTIFICATION_GRANTED_GLOBAL, _this] call CBA_fnc_globalEvent;
     }] call CBA_fnc_addEventHandler;
@@ -40,7 +42,7 @@ if (isServer) then {
         [QEV_CERTIFICATION_REVOKED_GLOBAL, _this] call CBA_fnc_globalEvent;
     }] call CBA_fnc_addEventHandler;
     [QEV_CERTIFICATION_LIST_CHANGED, {
-        [QEV_CERTIFICATION_LIST_CHANGED_GLOBAL, _this] call CBA_fnc_globalEvent;
+        [QEV_CERTIFICATION_LIST_CHANGED_GLOBAL, _this, QGVAR(certListJip)] call CBA_fnc_globalEventJIP;
     }] call CBA_fnc_addEventHandler;
 };
 

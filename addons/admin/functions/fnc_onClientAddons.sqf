@@ -39,9 +39,15 @@ private _extrasModMap = createHashMap;
     _extrasModMap set [_x, _entry];
 } forEach _extraAddons;
 
+// Resolve missing addons server-side — the admin client doesn't have them
+// loaded, so it can't do configSourceMod on them.
+private _missingModMap = _missingAddons call FUNC(resolveAddonModMap);
+
 INFO_4("Client %1 with UID %2 has %3 extra addons and %4 missing addons",name _playerObject,_uid,count _extraAddons,count _missingAddons);
 
-GVAR(clientAddonMap) set [_uid, [_extraAddons, _missingAddons, _extrasModMap]];
+GVAR(clientAddonMap) set [_uid, [_extraAddons, _missingAddons, _extrasModMap, _missingModMap]];
+
+[QGVAR(clientAddonEntry), [_uid, GVAR(clientAddonMap) get _uid]] call FUNC(adminEvent);
 
 if (count _missingAddons > 0) then {
     private _missingMods = _missingAddons call FUNC(getModNamesFromAddons);

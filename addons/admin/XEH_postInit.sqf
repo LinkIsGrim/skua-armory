@@ -88,6 +88,7 @@ call FUNC(sendClientAddons);
 
 // Disconnect fan-out lands on every machine; admin clients prune their
 // uiNamespace cache. No-op on machines that never opened the Addons tab.
+[QGVAR(clientAddonEntry), LINKFUNC(onClientAddonEntry)] call CBA_fnc_addEventHandler;
 [QGVAR(clientDisconnected), LINKFUNC(onClientDisconnected)] call CBA_fnc_addEventHandler;
 
 if (hasInterface) then {
