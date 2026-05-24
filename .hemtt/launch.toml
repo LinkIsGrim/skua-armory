@@ -110,6 +110,7 @@ workshop = [
     "2387297579", # Zeus Additions
     "2461386136", # Zeus Immersion Sounds
     "2450921295", # Zulu Headless Client (ZHC)
+    "2198339170", # Alternative Running
 ]
 parameters = [
     """-name=CPT. Grim""",
