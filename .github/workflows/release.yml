@@ -26,7 +26,11 @@ jobs:
       RUSTC_WRAPPER: sccache
     steps:
     - name: Install Arma 3 Tools
-      uses: arma-actions/arma3-tools@master
+      # Pinned to our fork's branch until arma-actions/arma3-tools#3
+      # (Basic Auth via headers instead of URL-embedded credentials)
+      # merges upstream -- switch back to arma-actions/arma3-tools@master
+      # once it does.
+      uses: LinkIsGrim/arma3-tools@basic-auth-headers
       with:
         toolsUrl: ${{ secrets.ARMA3_TOOLS_URL }}
 
