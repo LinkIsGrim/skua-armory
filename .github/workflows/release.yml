@@ -33,6 +33,12 @@ jobs:
       uses: LinkIsGrim/arma3-tools@basic-auth-headers
       with:
         toolsUrl: ${{ secrets.ARMA3_TOOLS_URL }}
+        # Real Authorization header instead of URL-embedded credentials
+        # (PowerShell's Invoke-WebRequest never sent those anyway -- see
+        # arma-actions/arma3-tools#3). ARMA3_TOOLS_URL itself no longer
+        # carries credentials, just the plain download URL.
+        toolsUrlUsername: ${{ secrets.ARMA3_TOOLS_USERNAME }}
+        toolsUrlPassword: ${{ secrets.ARMA3_TOOLS_PASSWORD }}
 
     - name: Checkout the source code
       uses: actions/checkout@v6
