@@ -68,8 +68,8 @@ ace_csw_progressBarTimeCoefficent = 0.25;
 
 // ACE Dragging
 ace_dragging_allowRunWithLightweight = true;
-ace_dragging_skipContainerWeight = false;
-ace_dragging_weightCoefficient = 2;
+ace_dragging_skipContainerWeight = true;
+ace_dragging_weightCoefficient = 10;
 
 // ACE Explosives
 ace_explosives_explodeOnDefuse = true;
@@ -220,8 +220,8 @@ ace_medical_treatment_allowBodyBagUnconscious = true;
 ace_medical_treatment_allowGraveDigging = 2;
 ace_medical_treatment_allowLitterCreation = true;
 ace_medical_treatment_allowSelfIV = 2;
-ace_medical_treatment_allowSelfPAK = 1;
-ace_medical_treatment_allowSelfStitch = 0;
+ace_medical_treatment_allowSelfPAK = 2;
+ace_medical_treatment_allowSelfStitch = 2;
 ace_medical_treatment_allowSharedEquipment = 3;
 ace_medical_treatment_bandageEffectiveness = 1;
 ace_medical_treatment_clearTrauma = 1;
@@ -280,13 +280,12 @@ ace_nightvision_noiseScaling = 0.5;
 // ACE Overheating
 ace_overheating_cookoffCoef = 0;
 ace_overheating_coolingCoef = 4;
-ace_overheating_displayTextOnJam = false;
 ace_overheating_enabled = true;
 ace_overheating_heatCoef = 1.5;
 ace_overheating_jamChanceCoef = 0.8;
 ace_overheating_overheatingDispersion = true;
 ace_overheating_overheatingRateOfFire = true;
-ace_overheating_suppressorCoef = 2;
+ace_overheating_suppressorCoef = 1.5;
 ace_overheating_unJamFailChance = 0.1;
 ace_overheating_unJamOnreload = false;
 ace_overheating_unJamOnSwapBarrel = false;

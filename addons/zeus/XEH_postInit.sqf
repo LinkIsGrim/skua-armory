@@ -8,7 +8,8 @@ if (isServer) then {
 [QACEGVAR(zeus,zeusUnitAssigned), {
     params ["_logic", "_unit"];
 
-    systemChat format ["Zeus Module assigned to %1", name _unit];
+    // Disable, lets everyone know when an admin died, sadge
+    //systemChat format ["Zeus Module assigned to %1", name _unit];
 
     if (isServer) then {
         GVAR(channel) radioChannelAdd [_unit];
