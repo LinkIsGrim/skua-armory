@@ -7,23 +7,28 @@
  * available yet.
  *
  * Layout:
- *  - Missing Mods : deduped mod names, alphabetical.
- *  - Extra Mods   : sorted mod names; "<unresolved>" prepended when orphans
- *                   exist. Selection drives Extra Addons via
- *                   fnc_refreshExtraAddons.
- *  - Extra Addons : addons belonging to the Extra-Mods selection (orphans
- *                   when "<unresolved>" is selected). Populated indirectly
- *                   via the Extra Mods LBSelChanged handler.
+ *  - Missing Mods   : sorted mod names. Selection drives Missing Addons via
+ *                     fnc_refreshMissingAddons.
+ *  - Missing Addons : addons belonging to the Missing-Mods selection.
+ *                     Populated indirectly via the Missing Mods LBSelChanged
+ *                     handler.
+ *  - Extra Mods     : sorted mod names; "<unresolved>" prepended when orphans
+ *                     exist. Selection drives Extra Addons via
+ *                     fnc_refreshExtraAddons.
+ *  - Extra Addons   : addons belonging to the Extra-Mods selection (orphans
+ *                     when "<unresolved>" is selected). Populated indirectly
+ *                     via the Extra Mods LBSelChanged handler.
  *
  * Data flow:
  *  - Cache lives in uiNamespace QGVAR(clientAddonMap):
- *    UID -> [extras, missing, extrasModMap]
- *  - extrasModMap (HASHMAP<addon, [dir, name]>) is what the client shipped at
- *    connect; values' name is "" when CBA couldn't resolve the source mod →
- *    that addon goes into the "<unresolved>" bucket.
- *  - We bucket addons by mod name into a display variable (QGVAR(extrasByMod))
- *    so the Extra-Mods LBSelChanged handler can look up the addon list
- *    without walking the cache again.
+ *    UID -> [extras, missing, extrasModMap, missingModMap]
+ *  - extrasModMap/missingModMap (HASHMAP<addon, [dir, name]>) map each addon
+ *    to its source mod; values' name is "" when unresolved → that addon goes
+ *    into the "<unresolved>" bucket (extras only — missing addons are
+ *    resolved server-side and always have a name).
+ *  - We bucket addons by mod name into display variables (QGVAR(extrasByMod),
+ *    QGVAR(missingByMod)) so the LBSelChanged handlers can look up the addon
+ *    list without walking the cache again.
  *
  * Arguments:
  * None.
@@ -39,14 +44,17 @@
 private _display = findDisplay IDD_ADMIN_MENU;
 if (isNull _display) exitWith {};
 
-private _missingCtrl   = _display displayCtrl IDC_ADMINMENU_MISSING_LIST;
-private _extraModsCtrl = _display displayCtrl IDC_ADMINMENU_EXTRA_MODS_LIST;
-private _extraAddCtrl  = _display displayCtrl IDC_ADMINMENU_EXTRA_ADDONS_LIST;
+private _missingCtrl    = _display displayCtrl IDC_ADMINMENU_MISSING_LIST;
+private _missingAddCtrl = _display displayCtrl IDC_ADMINMENU_MISSING_ADDONS_LIST;
+private _extraModsCtrl  = _display displayCtrl IDC_ADMINMENU_EXTRA_MODS_LIST;
+private _extraAddCtrl   = _display displayCtrl IDC_ADMINMENU_EXTRA_ADDONS_LIST;
 
 lbClear _missingCtrl;
+lbClear _missingAddCtrl;
 lbClear _extraModsCtrl;
 lbClear _extraAddCtrl;
 
+_display setVariable [QGVAR(missingByMod), createHashMap];
 _display setVariable [QGVAR(extrasByMod), createHashMap];
 
 private _map = uiNamespace getVariable [QGVAR(clientAddonMap), nil];
@@ -60,16 +68,42 @@ if (_uid isEqualTo "" || !(_uid in _map)) exitWith {};
 
 (_map get _uid) params ["_extras", "_missing", ["_extrasModMap", createHashMap], ["_missingModMap", createHashMap]];
 
-// Missing mods — resolved server-side since the admin client doesn't have
-// them loaded and can't do configSourceMod on them.
-private _missingModNames = createHashMap;
+// Bucket missing addons by mod name — resolved server-side since the admin
+// client doesn't have them loaded and can't do configSourceMod on them.
+// Empty name → orphan bucket keyed by UNRESOLVED_LABEL, same as extras.
+private _missingByMod = createHashMap;
 {
-    _missingModNames set [(_missingModMap getOrDefault [_x, ["", ""]]) select 1, nil];
+    private _entry = _missingModMap getOrDefault [_x, ["", ""]];
+    _entry params ["", "_name"];
+    private _bucketKey = [_name, UNRESOLVED_LABEL] select (_name isEqualTo "");
+    private _bucket = _missingByMod getOrDefault [_bucketKey, []];
+    _bucket pushBack _x;
+    _missingByMod set [_bucketKey, _bucket];
 } forEach _missing;
-_missingModNames deleteAt "";
-private _sortedMissing = keys _missingModNames;
-_sortedMissing sort true;
-{_missingCtrl lbAdd _x} forEach _sortedMissing;
+
+// Sort each bucket alphabetically for stable display.
+{
+    (_missingByMod get _x) sort true;
+} forEach (keys _missingByMod);
+
+_display setVariable [QGVAR(missingByMod), _missingByMod];
+
+// Missing Mods list: unresolved bucket pinned at the top (if any), then mod
+// names alphabetical.
+private _missingModNames = (keys _missingByMod) - [UNRESOLVED_LABEL];
+_missingModNames sort true;
+
+if (UNRESOLVED_LABEL in _missingByMod) then {
+    _missingCtrl lbAdd UNRESOLVED_LABEL;
+};
+{_missingCtrl lbAdd _x} forEach _missingModNames;
+
+// Drive the Missing Addons list by selecting the first row; the
+// LBSelChanged handler wired in fnc_onAdminMenuOpen does the actual
+// population.
+if (lbSize _missingCtrl > 0) then {
+    _missingCtrl lbSetCurSel 0;
+};
 
 // Bucket extras by resolved mod name. Empty name → orphan bucket keyed by
 // UNRESOLVED_LABEL so the lookup path is uniform.

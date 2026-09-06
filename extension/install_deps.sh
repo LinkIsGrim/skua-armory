@@ -17,4 +17,3 @@ fi
 
 echo "Installing Windows toolchain dependencies"
 rustup target add x86_64-pc-windows-msvc
-cargo install xwin --locked

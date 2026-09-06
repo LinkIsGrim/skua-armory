@@ -22,6 +22,7 @@ PREP(onAdminMenuKeyDown);
 PREP(switchAdminTab);
 PREP(refreshAddonLists);
 PREP(refreshExtraAddons);
+PREP(refreshMissingAddons);
 PREP(updateActionButtons);
 PREP(queueCertChange);
 PREP(commitCertChanges);

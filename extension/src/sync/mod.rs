@@ -26,7 +26,15 @@ use crate::database::get_client;
 /// Kicks off the post-bootstrap push on the global runtime and returns
 /// immediately. Safe to call from within another async task — the spawned
 /// future is detached.
+///
+/// Also starts the live-load watchdog (idempotent — see
+/// [`watchdog::spawn`]). Bootstrap only ever runs on the machine that owns
+/// the DB connection (SQF gates `database:bootstrap` behind `isServer`), so
+/// this is the right place to start DB-polling background work — starting it
+/// unconditionally at extension load would have every client polling a DB it
+/// has no business talking to.
 pub(crate) fn trigger_post_bootstrap() {
+    watchdog::spawn();
     RUNTIME.spawn(push_all());
 }
 

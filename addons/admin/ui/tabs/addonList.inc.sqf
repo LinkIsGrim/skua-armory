@@ -9,6 +9,8 @@ _tabs set [ADMIN_TAB_ADDONS, createHashMapFromArray [
     ["panelIdcs", [
         IDC_ADMINMENU_MISSING_TITLE,
         IDC_ADMINMENU_MISSING_LIST,
+        IDC_ADMINMENU_MISSING_ADDONS_TITLE,
+        IDC_ADMINMENU_MISSING_ADDONS_LIST,
         IDC_ADMINMENU_EXTRA_MODS_TITLE,
         IDC_ADMINMENU_EXTRA_MODS_LIST,
         IDC_ADMINMENU_EXTRA_ADDONS_TITLE,
@@ -35,3 +37,8 @@ _tabs set [ADMIN_TAB_ADDONS, createHashMapFromArray [
 // addons. The "<unresolved>" pseudo-entry routes through the same lookup.
 private _extraModsList = _display displayCtrl IDC_ADMINMENU_EXTRA_MODS_LIST;
 _extraModsList ctrlAddEventHandler ["LBSelChanged", {call FUNC(refreshExtraAddons)}];
+
+// Selecting a Missing Mods entry repopulates Missing Addons with that mod's
+// addons, same pattern as Extra Mods -> Extra Addons.
+private _missingList = _display displayCtrl IDC_ADMINMENU_MISSING_LIST;
+_missingList ctrlAddEventHandler ["LBSelChanged", {call FUNC(refreshMissingAddons)}];

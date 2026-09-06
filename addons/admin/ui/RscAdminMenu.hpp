@@ -194,21 +194,37 @@ class skua_admin_AdminMenu {
 
         // --- Addons panel -----------------------------------------------------
         // Hidden by default; fnc_switchAdminTab toggles visibility. Top half:
-        // Missing Mods, spanning both right columns. Bottom half: Extra Mods
-        // (resolved by client) and Extra Addons (orphans the client couldn't
-        // attribute to a mod).
+        // Missing Mods (left) and Missing Addons (right), same left/right
+        // selection-drives-detail pattern as the bottom half. Bottom half:
+        // Extra Mods (resolved by client) and Extra Addons (orphans the
+        // client couldn't attribute to a mod).
         class MissingHeader: HeldHeader {
             idc = IDC_ADMINMENU_MISSING_TITLE;
             text = "Missing Mods";
             x = QUOTE(POS_X(ACM_X + ACM_ADDON_AREA_X));
-            w = QUOTE(POS_W(ACM_ADDON_AREA_W));
+            w = QUOTE(POS_W(ACM_ADDON_LEFT_W));
             show = 0;
         };
         class MissingList: RscListBox {
             idc = IDC_ADMINMENU_MISSING_LIST;
             x = QUOTE(POS_X(ACM_X + ACM_ADDON_AREA_X));
             y = QUOTE(POS_Y(ACM_Y + ACM_LIST_BODY_Y));
-            w = QUOTE(POS_W(ACM_ADDON_AREA_W));
+            w = QUOTE(POS_W(ACM_ADDON_LEFT_W));
+            h = QUOTE(POS_H(ACM_ADDON_TOP_H));
+            show = 0;
+        };
+        class MissingAddonsHeader: HeldHeader {
+            idc = IDC_ADMINMENU_MISSING_ADDONS_TITLE;
+            text = "Missing Addons";
+            x = QUOTE(POS_X(ACM_X + ACM_COL_AVAIL_X));
+            w = QUOTE(POS_W(ACM_ADDON_RIGHT_W));
+            show = 0;
+        };
+        class MissingAddonsList: RscListBox {
+            idc = IDC_ADMINMENU_MISSING_ADDONS_LIST;
+            x = QUOTE(POS_X(ACM_X + ACM_COL_AVAIL_X));
+            y = QUOTE(POS_Y(ACM_Y + ACM_LIST_BODY_Y));
+            w = QUOTE(POS_W(ACM_ADDON_RIGHT_W));
             h = QUOTE(POS_H(ACM_ADDON_TOP_H));
             show = 0;
         };

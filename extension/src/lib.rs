@@ -57,8 +57,6 @@ fn init() -> Extension {
         default_hook(info);
     }));
 
-    sync::watchdog::spawn();
-
     ext
 }
 

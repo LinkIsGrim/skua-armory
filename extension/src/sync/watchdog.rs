@@ -84,9 +84,17 @@ async fn compute_cert_list_hash(client: &Client) -> Result<String, String> {
     serde_json::to_string(&certs).map_err(|e| format!("Failed to serialize certifications: {e}"))
 }
 
-/// Spawns the periodic watchdog task on the global runtime. Idempotent in
-/// practice — only `lib.rs::init` calls it, and only once per extension load.
+/// Spawns the periodic watchdog task on the global runtime. Called from
+/// [`crate::sync::trigger_post_bootstrap`] on every successful bootstrap, so
+/// it's guarded to actually start the ticker only once — bootstrap can be
+/// invoked more than once per extension load (retries, or a fresh campaign).
+static SPAWNED: std::sync::Once = std::sync::Once::new();
+
 pub(crate) fn spawn() {
+    SPAWNED.call_once(spawn_once);
+}
+
+fn spawn_once() {
     let interval = tick_interval();
     info!(interval_secs = interval.as_secs(), "starting cert watchdog");
     RUNTIME.spawn(async move {

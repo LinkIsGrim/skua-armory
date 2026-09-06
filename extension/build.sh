@@ -27,7 +27,7 @@ trap 'rm -f "$linux_log" "$windows_log"' EXIT
 
 # Use a separate target dir so host-compiled build scripts don't leak into the
 # cross container (glibc mismatch).
-(CARGO_TARGET_DIR="$REPO_ROOT/target-cross" cross build --target x86_64-unknown-linux-gnu --release) >"$linux_log" 2>&1 &
+(CARGO_TARGET_DIR="$REPO_ROOT/target-cross" cross build --target x86_64-unknown-linux-gnu --release --locked) >"$linux_log" 2>&1 &
 linux_pid=$!
 
 (cargo xwin build --release --target x86_64-pc-windows-msvc) >"$windows_log" 2>&1 &
